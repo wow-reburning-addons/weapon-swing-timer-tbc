@@ -1,15 +1,19 @@
-local addon_name, addon_data = ...
+local addon_name = "WeaponSwingTimer"
+local addon_data = _G.WeaponSwingTimer_AddonData
 if not addon_data then
-    addon_name = "WeaponSwingTimer"
-    addon_data = _G.WeaponSwingTimer_AddonData
-    if not addon_data then
-        addon_data = {}
-        _G.WeaponSwingTimer_AddonData = addon_data
-    end
-else
+    addon_data = {}
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 
+_G.WeaponSwingTimer_LocalizationTable = _G.WeaponSwingTimer_LocalizationTable or addon_data.localization_table or {}
+addon_data.localization_table = _G.WeaponSwingTimer_LocalizationTable
+if not getmetatable(addon_data.localization_table) then
+    setmetatable(addon_data.localization_table, {
+        __index = function(_, key)
+            return key
+        end,
+    })
+end
 local L = addon_data.localization_table
 
 local AceAddon = LibStub("AceAddon-3.0")
@@ -21,8 +25,8 @@ addon_data.core.all_timers = {
 
 local version = "6.5.2"
 
-local load_message = L["Thank you for installing WeaponSwingTimer Version"] .. " " .. version .. 
-                     " " .. L["by WatchYourSixx! Use |cFFFFC300/wst|r for more options."]
+local load_message = L["core.welcome.version"] .. " " .. version .. 
+                     " " .. L["core.welcome.hint"]
                      
 addon_data.core.default_settings = {
     one_frame = false,
@@ -677,7 +681,7 @@ addon_data.core.MissHandler = function(unit, miss_type, is_offhand)
                 addon_data.target.ResetOffSwingTimer()
             end
         else
-            addon_data.utils.PrintMsg(L["Unexpected Unit Type in MissHandler()."])
+            addon_data.utils.PrintMsg(L["core.error.unexpected_unit_misshandler"])
         end
     else
         if unit == "player" then
@@ -696,7 +700,7 @@ addon_data.core.MissHandler = function(unit, miss_type, is_offhand)
                 addon_data.target.ResetOffSwingTimer()
             end 
         else
-            addon_data.utils.PrintMsg(L["Unexpected Unit Type in MissHandler()."])
+            addon_data.utils.PrintMsg(L["core.error.unexpected_unit_misshandler"])
         end
     end
 end
@@ -713,7 +717,7 @@ addon_data.core.SpellHandler = function(unit, spell_id)
                     elseif unit == "target" then
                         addon_data.target.ResetMainSwingTimer()
                     else
-                        addon_data.utils.PrintMsg(L["Unexpected Unit Type in SpellHandler()."])
+                        addon_data.utils.PrintMsg(L["core.error.unexpected_unit_spellhandler"])
                     end
                 end
                 

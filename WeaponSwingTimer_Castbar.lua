@@ -1,38 +1,42 @@
-local addon_name, addon_data = ...
+local addon_name = "WeaponSwingTimer"
+local addon_data = _G.WeaponSwingTimer_AddonData
 if not addon_data then
-    addon_name = "WeaponSwingTimer"
-    addon_data = _G.WeaponSwingTimer_AddonData
-    if not addon_data then
-        addon_data = {}
-        _G.WeaponSwingTimer_AddonData = addon_data
-    end
-else
+    addon_data = {}
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 
+_G.WeaponSwingTimer_LocalizationTable = _G.WeaponSwingTimer_LocalizationTable or addon_data.localization_table or {}
+addon_data.localization_table = _G.WeaponSwingTimer_LocalizationTable
+if not getmetatable(addon_data.localization_table) then
+    setmetatable(addon_data.localization_table, {
+        __index = function(_, key)
+            return key
+        end,
+    })
+end
 local L = addon_data.localization_table
 --- define addon structure from the above local variable
 addon_data.castbar = {}
 --- declare array for ranks of all abilities, cast times, cooldown, based on spell ID
 addon_data.castbar.shot_spell_ids = {
-	[5384] = {spell_name = L["Feign Death"], rank = nil, cast_time = nil, cooldown = nil},
-	[19506] = {spell_name = L["Trueshot Aura"], rank = 1, cast_time = nil, cooldown = nil},
-	[20905] = {spell_name = L["Trueshot Aura"], rank = 2, cast_time = nil, cooldown = nil},
-	[20906] = {spell_name = L["Trueshot Aura"], rank = 3, cast_time = nil, cooldown = nil},
-    [2643] = {spell_name = L["Multi-Shot"], rank = 1, cast_time = 0.5, cooldown = 10},
-    [14288] = {spell_name = L["Multi-Shot"], rank = 2, cast_time = 0.5, cooldown = 10},
-    [14289] = {spell_name = L["Multi-Shot"], rank = 3, cast_time = 0.5, cooldown = 10},
-    [14290] = {spell_name = L["Multi-Shot"], rank = 4, cast_time = 0.5, cooldown = 10},
-    [25294] = {spell_name = L["Multi-Shot"], rank = 5, cast_time = 0.5, cooldown = 10},
-	[27021] = {spell_name = L["Multi-Shot"], rank = 6, cast_time = 0.5, cooldown = 10},
-    [19434] = {spell_name = L["Aimed Shot"], rank = 1, cast_time = 3, cooldown = 6},
-    [20900] = {spell_name = L["Aimed Shot"], rank = 2, cast_time = 3, cooldown = 6},
-    [20901] = {spell_name = L["Aimed Shot"], rank = 3, cast_time = 3, cooldown = 6},
-    [20902] = {spell_name = L["Aimed Shot"], rank = 4, cast_time = 3, cooldown = 6},
-    [20903] = {spell_name = L["Aimed Shot"], rank = 5, cast_time = 3, cooldown = 6},
-    [20904] = {spell_name = L["Aimed Shot"], rank = 6, cast_time = 3, cooldown = 6},
-    [27065] = {spell_name = L["Aimed Shot"], rank = 7, cast_time = 3, cooldown = 6},
-    [5019] = {spell_name = L["Shoot"], rank = nil, cast_time = nil, cooldown = nil}
+	[5384] = {spell_name = L["spell.feign_death"], rank = nil, cast_time = nil, cooldown = nil},
+	[19506] = {spell_name = L["spell.trueshot_aura"], rank = 1, cast_time = nil, cooldown = nil},
+	[20905] = {spell_name = L["spell.trueshot_aura"], rank = 2, cast_time = nil, cooldown = nil},
+	[20906] = {spell_name = L["spell.trueshot_aura"], rank = 3, cast_time = nil, cooldown = nil},
+    [2643] = {spell_name = L["spell.multi_shot"], rank = 1, cast_time = 0.5, cooldown = 10},
+    [14288] = {spell_name = L["spell.multi_shot"], rank = 2, cast_time = 0.5, cooldown = 10},
+    [14289] = {spell_name = L["spell.multi_shot"], rank = 3, cast_time = 0.5, cooldown = 10},
+    [14290] = {spell_name = L["spell.multi_shot"], rank = 4, cast_time = 0.5, cooldown = 10},
+    [25294] = {spell_name = L["spell.multi_shot"], rank = 5, cast_time = 0.5, cooldown = 10},
+	[27021] = {spell_name = L["spell.multi_shot"], rank = 6, cast_time = 0.5, cooldown = 10},
+    [19434] = {spell_name = L["spell.aimed_shot"], rank = 1, cast_time = 3, cooldown = 6},
+    [20900] = {spell_name = L["spell.aimed_shot"], rank = 2, cast_time = 3, cooldown = 6},
+    [20901] = {spell_name = L["spell.aimed_shot"], rank = 3, cast_time = 3, cooldown = 6},
+    [20902] = {spell_name = L["spell.aimed_shot"], rank = 4, cast_time = 3, cooldown = 6},
+    [20903] = {spell_name = L["spell.aimed_shot"], rank = 5, cast_time = 3, cooldown = 6},
+    [20904] = {spell_name = L["spell.aimed_shot"], rank = 6, cast_time = 3, cooldown = 6},
+    [27065] = {spell_name = L["spell.aimed_shot"], rank = 7, cast_time = 3, cooldown = 6},
+    [5019] = {spell_name = L["spell.shoot"], rank = nil, cast_time = nil, cooldown = nil}
 }
 --- is spell multi-shot defined by spell_id
 addon_data.castbar.is_spell_multi_shot = function(spell_id)
@@ -311,7 +315,7 @@ addon_data.castbar.OnUnitSpellCastFailed = function(unit, spell_id)
 			if spell_aimed_enabled or spell_multi_enabled then
 				addon_data.castbar.frame.spell_bar:SetVertexColor(0.7, 0, 0, 1)
 				if character_castbar_settings.show_text then
-					frame.spell_text_center:SetText(L["Failed"])
+					frame.spell_text_center:SetText(L["cast.failed"])
 				end
 				frame.spell_bar:SetWidth(settings.width)
 			end
@@ -338,7 +342,7 @@ addon_data.castbar.OnUnitSpellCastInterrupted = function(unit, spell_id)
 			if spell_aimed_enabled or spell_multi_enabled then
 				frame.spell_bar:SetVertexColor(0.7, 0, 0, 1)
 				if settings.show_text then
-					frame.spell_text_center:SetText(L["Interrupted"])
+					frame.spell_text_center:SetText(L["cast.interrupted"])
 				end
 				frame.spell_bar:SetWidth(settings.width)
 			end
@@ -397,7 +401,7 @@ addon_data.castbar.UpdateVisualsOnUpdate = function()
 		frame.spell_bar:SetVertexColor(0.2, 0.2, 0.2, 1)
 		frame:SetSize(settings.width, settings.height)
         if not (settings.is_locked) then
-			frame.spell_text_center:SetText(L["Spell Bar Unlocked"])
+			frame.spell_text_center:SetText(L["cast.spell_bar_unlocked"])
 			frame:SetAlpha(1)
 		else
 			frame:SetAlpha(0)
@@ -633,8 +637,8 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.show_casttext_checkbox = addon_data.config.CheckBoxFactory(
         "CastBarShowCastTextCheckBox",
         panel,
-		L["Show Cast Text"],
-        L["Enables the cast bar text."],
+		L["config.castbar.show_cast_text.label"],
+        L["config.castbar.show_cast_text.desc"],
         addon_data.castbar.ShowCastTextCheckBoxOnClick)
     panel.show_casttext_checkbox:SetPoint("TOPLEFT", 10, -85)
     
@@ -642,7 +646,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.width_editbox = addon_data.config.EditBoxFactory(
         "CastBarWidthEditBox",
         panel,
-        L["Bar Width"],
+        L["config.common.bar_width.label"],
         75,
         25,
         addon_data.castbar.WidthEditBoxOnEnter)
@@ -651,7 +655,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.height_editbox = addon_data.config.EditBoxFactory(
         "CastBarHeightEditBox",
         panel,
-        L["Bar Height"],
+        L["config.common.bar_height.label"],
         75,
         25,
         addon_data.castbar.HeightEditBoxOnEnter)
@@ -669,7 +673,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.x_offset_editbox = addon_data.config.EditBoxFactory(
         "CastBarXOffsetEditBox",
         panel,
-        L["X Offset"],
+        L["config.common.x_offset.label"],
         75,
         25,
         addon_data.castbar.XOffsetEditBoxOnEnter)
@@ -678,7 +682,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.y_offset_editbox = addon_data.config.EditBoxFactory(
         "CastBarYOffsetEditBox",
         panel,
-        L["Y Offset"],
+        L["config.common.y_offset.label"],
         75,
         25,
         addon_data.castbar.YOffsetEditBoxOnEnter)
@@ -688,7 +692,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.in_combat_alpha_slider = addon_data.config.SliderFactory(
         "CastBarInCombatAlphaSlider",
         panel,
-        L["In Combat Alpha"],
+        L["config.common.in_combat_alpha.label"],
         0,
         1,
         0.05,
@@ -698,7 +702,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     -- panel.ooc_alpha_slider = addon_data.config.SliderFactory(
         -- "CastBarOOCAlphaSlider",
         -- panel,
-        -- L["Out of Combat Alpha"],
+        -- L["config.common.out_of_combat_alpha.label"],
         -- 0,
         -- 1,
         -- 0.05,
@@ -708,7 +712,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.backplane_alpha_slider = addon_data.config.SliderFactory(
         "CastBarBackplaneAlphaSlider",
         panel,
-        L["Backplane Alpha"],
+        L["config.common.backplane_alpha.label"],
         0,
         1,
         0.05,
@@ -719,8 +723,8 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.show_aimedshot_cast_bar_checkbox = addon_data.config.CheckBoxFactory(
         "HunterShowAimedShotCastBarCheckBox",
         panel,
-        L["Aimed Shot cast bar"],
-        L["Allows the cast bar to show Aimed Shot casts."],
+        L["config.castbar.aimed_shot.label"],
+        L["config.castbar.aimed_shot.desc"],
         addon_data.castbar.ShowAimedShotCastBarCheckBoxOnClick)
     panel.show_aimedshot_cast_bar_checkbox:SetPoint("TOPLEFT", 10, -110)
 
@@ -728,8 +732,8 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.show_multishot_cast_bar_checkbox = addon_data.config.CheckBoxFactory(
         "HunterShowMultiShotCastBarCheckBox",
         panel,
-        L["Multi-Shot cast bar"],
-        L["Allows the cast bar to show Multi-Shot casts."],
+        L["config.castbar.multi_shot.label"],
+        L["config.castbar.multi_shot.desc"],
         addon_data.castbar.ShowMultiShotCastBarCheckBoxOnClick)
     panel.show_multishot_cast_bar_checkbox:SetPoint("TOPLEFT", 10, -45)
     
@@ -737,8 +741,8 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
     panel.show_latency_bar_checkbox = addon_data.config.CheckBoxFactory(
         "HunterShowLatencyBarCheckBox",
         panel,
-        L["Latency bar"],
-        L["Shows a bar that represents latency on cast bar."],
+        L["config.castbar.latency.label"],
+        L["config.castbar.latency.desc"],
         addon_data.castbar.ShowLatencyBarsCheckBoxOnClick)
     panel.show_latency_bar_checkbox:SetPoint("TOPLEFT", 10, -65)
     

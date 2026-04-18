@@ -1,12 +1,7 @@
-local addon_name, addon_data = ...
+local addon_name = "WeaponSwingTimer"
+local addon_data = _G.WeaponSwingTimer_AddonData
 if not addon_data then
-    addon_name = "WeaponSwingTimer"
-    addon_data = _G.WeaponSwingTimer_AddonData
-    if not addon_data then
-        addon_data = {}
-        _G.WeaponSwingTimer_AddonData = addon_data
-    end
-else
+    addon_data = {}
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 

@@ -35,7 +35,11 @@ libs\AceConsole-3.0\AceConsole-3.0.lua
 libs\AceGUI-3.0\AceGUI-3.0.xml
 libs\AceConfig-3.0\AceConfig-3.0.xml
 
-localization.lua
+Locales\init.lua
+Locales\enUS.lua
+Locales\ruRU.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
 WeaponSwingTimer_ranged_DB.lua
 WeaponSwingTimer_Utils.lua
 WeaponSwingTimer_Player.lua

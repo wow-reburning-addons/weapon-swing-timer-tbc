@@ -1,15 +1,19 @@
-local addon_name, addon_data = ...
+local addon_name = "WeaponSwingTimer"
+local addon_data = _G.WeaponSwingTimer_AddonData
 if not addon_data then
-    addon_name = "WeaponSwingTimer"
-    addon_data = _G.WeaponSwingTimer_AddonData
-    if not addon_data then
-        addon_data = {}
-        _G.WeaponSwingTimer_AddonData = addon_data
-    end
-else
+    addon_data = {}
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 
+_G.WeaponSwingTimer_LocalizationTable = _G.WeaponSwingTimer_LocalizationTable or addon_data.localization_table or {}
+addon_data.localization_table = _G.WeaponSwingTimer_LocalizationTable
+if not getmetatable(addon_data.localization_table) then
+    setmetatable(addon_data.localization_table, {
+        __index = function(_, key)
+            return key
+        end,
+    })
+end
 local L = addon_data.localization_table
 
 addon_data.player = {}
@@ -265,7 +269,7 @@ addon_data.player.UpdateVisualsOnUpdate = function()
             frame.main_spark:Show()
         end
         -- Update the main bars text
-        frame.main_left_text:SetText(L["Main-Hand"])
+        frame.main_left_text:SetText(L["bar.main_hand"])
         frame.main_right_text:SetText(tostring(addon_data.utils.SimpleRound(main_timer, 0.1)))
         -- Update the off hand bar
         if addon_data.player.has_offhand and settings.show_offhand then
@@ -299,7 +303,7 @@ addon_data.player.UpdateVisualsOnUpdate = function()
                 frame.off_spark:Show()
             end
             -- Update the off-hand bar's text
-            frame.off_left_text:SetText(L["Off-Hand"])
+            frame.off_left_text:SetText(L["bar.off_hand"])
             frame.off_right_text:SetText(tostring(addon_data.utils.SimpleRound(off_timer, 0.1)))
         else
             frame.off_bar:Hide()
@@ -715,7 +719,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     local settings = character_player_settings
     
     -- Title Text
-    panel.title_text = addon_data.config.TextFactory(panel, L["Player Swing Bar Settings"], 20)
+    panel.title_text = addon_data.config.TextFactory(panel, L["config.player.title"], 20)
     panel.title_text:SetPoint("TOPLEFT", 10, -10)
     panel.title_text:SetTextColor(1, 0.82, 0, 1)
     
@@ -723,56 +727,56 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.enabled_checkbox = addon_data.config.CheckBoxFactory(
         "PlayerEnabledCheckBox",
         panel,
-        L["Enable"],
-        L["Enables the player's swing bars."],
+        L["config.common.enable.label"],
+        L["config.player.enable.desc"],
         addon_data.player.EnabledCheckBoxOnClick)
     panel.enabled_checkbox:SetPoint("TOPLEFT", 10, -40)
     -- Show Off-Hand Checkbox
     panel.show_offhand_checkbox = addon_data.config.CheckBoxFactory(
         "PlayerShowOffHandCheckBox",
         panel,
-        L["Show Off-Hand"],
-        L["Enables the player's off-hand swing bar."],
+        L["config.common.show_offhand.label"],
+        L["config.player.show_offhand.desc"],
         addon_data.player.ShowOffHandCheckBoxOnClick)
     panel.show_offhand_checkbox:SetPoint("TOPLEFT", 10, -60)
     -- Show Border Checkbox
     panel.show_border_checkbox = addon_data.config.CheckBoxFactory(
         "PlayerShowBorderCheckBox",
         panel,
-        L["Show border"],
-        L["Enables the player bar's border."],
+        L["config.common.show_border.label"],
+        L["config.player.show_border.desc"],
         addon_data.player.ShowBorderCheckBoxOnClick)
     panel.show_border_checkbox:SetPoint("TOPLEFT", 10, -80)
     -- Show Classic Bars Checkbox
     panel.classic_bars_checkbox = addon_data.config.CheckBoxFactory(
         "PlayerClassicBarsCheckBox",
         panel,
-        L["Classic bars"],
-        L["Enables the classic texture for the player's bars."],
+        L["config.common.classic_bars.label"],
+        L["config.player.classic_bars.desc"],
         addon_data.player.ClassicBarsCheckBoxOnClick)
     panel.classic_bars_checkbox:SetPoint("TOPLEFT", 10, -100)
     -- Fill/Empty Checkbox
     panel.fill_empty_checkbox = addon_data.config.CheckBoxFactory(
         "PlayerFillEmptyCheckBox",
         panel,
-        L["Fill / Empty"],
-        L["Determines if the bar is full or empty when a swing is ready."],
+        L["config.common.fill_empty.label"],
+        L["config.common.fill_empty.desc"],
         addon_data.player.FillEmptyCheckBoxOnClick)
     panel.fill_empty_checkbox:SetPoint("TOPLEFT", 10, -120)
     -- Show Left Text Checkbox
     panel.show_left_text_checkbox = addon_data.config.CheckBoxFactory(
         "PlayerShowLeftTextCheckBox",
         panel,
-        L["Show Left Text"],
-        L["Enables the player's left side text."],
+        L["config.common.show_left_text.label"],
+        L["config.player.show_left_text.desc"],
         addon_data.player.ShowLeftTextCheckBoxOnClick)
     panel.show_left_text_checkbox:SetPoint("TOPLEFT", 10, -140)
     -- Show Right Text Checkbox
     panel.show_right_text_checkbox = addon_data.config.CheckBoxFactory(
         "PlayerShowRightTextCheckBox",
         panel,
-        L["Show Right Text"],
-        L["Enables the player's right side text."],
+        L["config.common.show_right_text.label"],
+        L["config.player.show_right_text.desc"],
         addon_data.player.ShowRightTextCheckBoxOnClick)
     panel.show_right_text_checkbox:SetPoint("TOPLEFT", 10, -160)
     
@@ -780,7 +784,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.width_editbox = addon_data.config.EditBoxFactory(
         "PlayerWidthEditBox",
         panel,
-        L["Bar Width"],
+        L["config.common.bar_width.label"],
         75,
         25,
         addon_data.player.WidthEditBoxOnEnter)
@@ -789,7 +793,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.height_editbox = addon_data.config.EditBoxFactory(
         "PlayerHeightEditBox",
         panel,
-        L["Bar Height"],
+        L["config.common.bar_height.label"],
         75,
         25,
         addon_data.player.HeightEditBoxOnEnter)
@@ -807,7 +811,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.x_offset_editbox = addon_data.config.EditBoxFactory(
         "PlayerXOffsetEditBox",
         panel,
-        L["X Offset"],
+        L["config.common.x_offset.label"],
         75,
         25,
         addon_data.player.XOffsetEditBoxOnEnter)
@@ -816,7 +820,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.y_offset_editbox = addon_data.config.EditBoxFactory(
         "PlayerYOffsetEditBox",
         panel,
-        L["Y Offset"],
+        L["config.common.y_offset.label"],
         75,
         25,
         addon_data.player.YOffsetEditBoxOnEnter)
@@ -827,7 +831,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
         'PlayerMainColorPicker',
         panel,
         settings.main_r, settings.main_g, settings.main_b, settings.main_a,
-        L["Main-hand Bar Color"],
+        L["config.common.main_bar_color.label"],
         addon_data.player.MainColorPickerOnClick)
     panel.main_color_picker:SetPoint('TOPLEFT', 205, -150)
     -- Main-hand color text picker
@@ -835,7 +839,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
         'PlayerMainTextColorPicker',
         panel,
         settings.main_text_r, settings.main_text_g, settings.main_text_b, settings.main_text_a,
-        L["Main-hand Bar Text Color"],
+        L["config.common.main_text_color.label"],
         addon_data.player.MainTextColorPickerOnClick)
     panel.main_text_color_picker:SetPoint('TOPLEFT', 205, -170)
     -- Off-hand color picker
@@ -843,7 +847,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
         'PlayerOffColorPicker',
         panel,
         settings.off_r, settings.off_g, settings.off_b, settings.off_a,
-        L["Off-hand Bar Color"],
+        L["config.common.off_bar_color.label"],
         addon_data.player.OffColorPickerOnClick)
     panel.off_color_picker:SetPoint('TOPLEFT', 205, -200)
     -- Off-hand color text picker
@@ -851,7 +855,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
         'PlayerOffTextColorPicker',
         panel,
         settings.off_text_r, settings.off_text_g, settings.off_text_b, settings.off_text_a,
-        L["Off-hand Bar Text Color"],
+        L["config.common.off_text_color.label"],
         addon_data.player.OffTextColorPickerOnClick)
     panel.off_text_color_picker:SetPoint('TOPLEFT', 205, -220)
     
@@ -859,7 +863,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.in_combat_alpha_slider = addon_data.config.SliderFactory(
         "PlayerInCombatAlphaSlider",
         panel,
-        L["In Combat Alpha"],
+        L["config.common.in_combat_alpha.label"],
         0,
         1,
         0.05,
@@ -869,7 +873,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.ooc_alpha_slider = addon_data.config.SliderFactory(
         "PlayerOOCAlphaSlider",
         panel,
-        L["Out of Combat Alpha"],
+        L["config.common.out_of_combat_alpha.label"],
         0,
         1,
         0.05,
@@ -879,7 +883,7 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     panel.backplane_alpha_slider = addon_data.config.SliderFactory(
         "PlayerBackplaneAlphaSlider",
         panel,
-        L["Backplane Alpha"],
+        L["config.common.backplane_alpha.label"],
         0,
         1,
         0.05,
@@ -890,4 +894,3 @@ addon_data.player.CreateConfigPanel = function(parent_panel)
     addon_data.player.UpdateConfigPanelValues()
     return panel
 end
-
