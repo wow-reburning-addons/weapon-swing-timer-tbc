@@ -162,8 +162,8 @@ Saved variables are per-character and must preserve existing names to avoid user
 
 ### Combat log compatibility
 
-- Must handle both modern and legacy combat-log payload shapes through normalization.
-- No runtime error when `CombatLogGetCurrentEventInfo` is unavailable.
+- Use legacy (2.4.3-style) combat-log payload shape only.
+- Do not depend on `CombatLogGetCurrentEventInfo`.
 
 ### Nil and unknown-data safety
 

@@ -12,10 +12,8 @@ end
 
 local L = addon_data.localization_table
 
-addon_data.core = {}
-
-addon_data.core.core_frame = CreateFrame("Frame", addon_name .. "CoreFrame", UIParent)
-addon_data.core.core_frame:RegisterEvent("ADDON_LOADED")
+local AceAddon = LibStub("AceAddon-3.0")
+addon_data.core = AceAddon:NewAddon(addon_name, "AceEvent-3.0", "AceConsole-3.0")
 
 addon_data.core.all_timers = {
     addon_data.player, addon_data.target
@@ -47,23 +45,15 @@ local function GetTrailingBoolean(...)
     return nil
 end
 
-addon_data.core.NormalizeCombatLogEvent = function(is_modern_payload, ...)
+addon_data.core.NormalizeCombatLogEvent = function(...)
     local event = select(2, ...)
     if not event then
         return nil
     end
 
-    local source_guid, dest_guid
-    local payload_index
-    if is_modern_payload then
-        source_guid = select(4, ...)
-        dest_guid = select(8, ...)
-        payload_index = 12
-    else
-        source_guid = select(3, ...)
-        dest_guid = select(6, ...)
-        payload_index = 9
-    end
+    local source_guid = select(3, ...)
+    local dest_guid = select(6, ...)
+    local payload_index = 9
 
     local combat_info = {
         event = event,
@@ -725,86 +715,103 @@ addon_data.core.SpellHandler = function(unit, spell_id)
     end
 end
 
-local function OnAddonLoaded(self)
-    -- Attach the rest of the events and scripts to the core frame
-    addon_data.core.core_frame:SetScript("OnUpdate", CoreFrame_OnUpdate)
-    addon_data.core.core_frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    addon_data.core.core_frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-    addon_data.core.core_frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-    addon_data.core.core_frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-    addon_data.core.core_frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
-    addon_data.core.core_frame:RegisterEvent("START_AUTOREPEAT_SPELL")
-    addon_data.core.core_frame:RegisterEvent("STOP_AUTOREPEAT_SPELL")
-    addon_data.core.core_frame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-    addon_data.core.core_frame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-    addon_data.core.core_frame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-    addon_data.core.core_frame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
-    -- Load the settings for the core and all timers
+function addon_data.core:OnInitialize()
     LoadAllSettings()
-    InitializeAllVisuals()
-    -- Any other misc operations that happen at the start
-    addon_data.player.ZeroizeSwingTimers()
-    addon_data.target.ZeroizeSwingTimers()
-	
-    if character_core_settings.welcome_message then	
-		addon_data.utils.PrintMsg(load_message)	
-	end
+    self:RegisterChatCommand("wst", "OpenConfig")
+    self:RegisterChatCommand("weaponswingtimer", "OpenConfig")
 end
 
-local function CoreFrame_OnEvent(self, event, ...)
-    local args = {...}
-    if event == "ADDON_LOADED" then
-        if args[1] == "WeaponSwingTimer" then
-            OnAddonLoaded()
-        end
-    elseif event == "PLAYER_REGEN_ENABLED" then
-        addon_data.core.in_combat = false
-    elseif event == "PLAYER_REGEN_DISABLED" then
-        addon_data.core.in_combat = true
-    elseif event == "PLAYER_TARGET_CHANGED" then
-        addon_data.target.OnPlayerTargetChanged()
-    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local combat_info
-        if CombatLogGetCurrentEventInfo then
-            combat_info = addon_data.core.NormalizeCombatLogEvent(true, CombatLogGetCurrentEventInfo())
-        else
-            combat_info = addon_data.core.NormalizeCombatLogEvent(false, unpack(args))
-        end
+function addon_data.core:OnEnable()
+    self.core_frame = self.core_frame or CreateFrame("Frame", addon_name .. "CoreFrame", UIParent)
+    self.core_frame:SetScript("OnUpdate", CoreFrame_OnUpdate)
 
-        if not combat_info then
-            return
-        end
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", "OnPlayerRegenEnabled")
+    self:RegisterEvent("PLAYER_REGEN_DISABLED", "OnPlayerRegenDisabled")
+    self:RegisterEvent("PLAYER_TARGET_CHANGED", "OnPlayerTargetChanged")
+    self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "OnCombatLogEvent")
+    self:RegisterEvent("UNIT_INVENTORY_CHANGED", "OnUnitInventoryChanged")
+    self:RegisterEvent("START_AUTOREPEAT_SPELL", "OnStartAutorepeatSpell")
+    self:RegisterEvent("STOP_AUTOREPEAT_SPELL", "OnStopAutorepeatSpell")
+    self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", "OnUnitSpellCastSucceeded")
+    self:RegisterEvent("UNIT_SPELLCAST_FAILED", "OnUnitSpellCastFailed")
+    self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED", "OnUnitSpellCastInterrupted")
+    self:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET", "OnUnitSpellCastFailedQuiet")
 
-        addon_data.player.OnCombatLogUnfiltered(combat_info)
-        addon_data.target.OnCombatLogUnfiltered(combat_info)
-		addon_data.hunter.OnCombatLogUnfiltered(combat_info)
-		addon_data.castbar.OnCombatLogUnfiltered(combat_info)
-    elseif event == "UNIT_INVENTORY_CHANGED" then
-        addon_data.player.OnInventoryChange()
-        addon_data.target.OnInventoryChange()
-		addon_data.hunter.OnInventoryChange()
-    elseif event == "START_AUTOREPEAT_SPELL" then
-        addon_data.hunter.OnStartAutorepeatSpell()
-    elseif event == "STOP_AUTOREPEAT_SPELL" then
-        addon_data.hunter.OnStopAutorepeatSpell()
-    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
-        addon_data.hunter.OnUnitSpellCastSucceeded(args[1], args[3])
-		addon_data.castbar.OnUnitSpellCastSucceeded(args[1], args[3])
-    elseif event == "UNIT_SPELLCAST_FAILED" then
-		addon_data.castbar.OnUnitSpellCastFailed(args[1], args[3])
-    elseif event == "UNIT_SPELLCAST_INTERRUPTED" then
-		addon_data.hunter.OnUnitSpellCastInterrupted(args[1], args[3])
-		addon_data.castbar.OnUnitSpellCastInterrupted(args[1], args[3])
-    elseif event == "UNIT_SPELLCAST_FAILED_QUIET" then
-        addon_data.hunter.OnUnitSpellCastFailedQuiet(args[1], args[3])
+    InitializeAllVisuals()
+    addon_data.player.ZeroizeSwingTimers()
+    addon_data.target.ZeroizeSwingTimers()
+
+    if character_core_settings.welcome_message then
+        addon_data.utils.PrintMsg(load_message)
     end
 end
 
--- Add a slash command to bring up the config window
-SLASH_WEAPONSWINGTIMER_CONFIG1 = "/WeaponSwingTimer"
-SLASH_WEAPONSWINGTIMER_CONFIG2 = "/weaponswingtimer"
-SLASH_WEAPONSWINGTIMER_CONFIG3 = "/wst"
-SlashCmdList["WEAPONSWINGTIMER_CONFIG"] = function(option)
+function addon_data.core:OnPlayerRegenEnabled()
+    addon_data.core.in_combat = false
+end
+
+function addon_data.core:OnPlayerRegenDisabled()
+    addon_data.core.in_combat = true
+end
+
+function addon_data.core:OnPlayerTargetChanged()
+    addon_data.target.OnPlayerTargetChanged()
+end
+
+function addon_data.core:OnCombatLogEvent(event, ...)
+    local combat_info = addon_data.core.NormalizeCombatLogEvent(...)
+
+    if not combat_info then
+        return
+    end
+
+    addon_data.player.OnCombatLogUnfiltered(combat_info)
+    addon_data.target.OnCombatLogUnfiltered(combat_info)
+    addon_data.hunter.OnCombatLogUnfiltered(combat_info)
+    addon_data.castbar.OnCombatLogUnfiltered(combat_info)
+end
+
+function addon_data.core:OnUnitInventoryChanged(event, ...)
+    addon_data.player.OnInventoryChange()
+    addon_data.target.OnInventoryChange()
+    addon_data.hunter.OnInventoryChange()
+end
+
+function addon_data.core:OnStartAutorepeatSpell()
+    addon_data.hunter.OnStartAutorepeatSpell()
+end
+
+function addon_data.core:OnStopAutorepeatSpell()
+    addon_data.hunter.OnStopAutorepeatSpell()
+end
+
+function addon_data.core:OnUnitSpellCastSucceeded(event, ...)
+    local unit = select(1, ...)
+    local spell_id = select(3, ...)
+    addon_data.hunter.OnUnitSpellCastSucceeded(unit, spell_id)
+    addon_data.castbar.OnUnitSpellCastSucceeded(unit, spell_id)
+end
+
+function addon_data.core:OnUnitSpellCastFailed(event, ...)
+    local unit = select(1, ...)
+    local spell_id = select(3, ...)
+    addon_data.castbar.OnUnitSpellCastFailed(unit, spell_id)
+end
+
+function addon_data.core:OnUnitSpellCastInterrupted(event, ...)
+    local unit = select(1, ...)
+    local spell_id = select(3, ...)
+    addon_data.hunter.OnUnitSpellCastInterrupted(unit, spell_id)
+    addon_data.castbar.OnUnitSpellCastInterrupted(unit, spell_id)
+end
+
+function addon_data.core:OnUnitSpellCastFailedQuiet(event, ...)
+    local unit = select(1, ...)
+    local spell_id = select(3, ...)
+    addon_data.hunter.OnUnitSpellCastFailedQuiet(unit, spell_id)
+end
+
+function addon_data.core:OpenConfig(option)
     local panel = addon_data.config and addon_data.config.config_parent_panel
     if InterfaceOptionsFrame_OpenToCategory then
         InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
@@ -819,6 +826,3 @@ SlashCmdList["WEAPONSWINGTIMER_CONFIG"] = function(option)
         end
     end
 end
-
--- Setup the core of the addon (This is like calling main in C)
-addon_data.core.core_frame:SetScript("OnEvent", CoreFrame_OnEvent)
