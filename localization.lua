@@ -27,6 +27,7 @@ local L = addon_data.localization_table
 	L["Locks all of the swing bar frames, preventing them from being dragged."]="Locks all of the swing bar frames, preventing them from being dragged."
 	L[" Welcome Message"]=" Welcome Message"
 	L["Displays the welcome message upon login/reload. Uncheck to disable."]="Displays the welcome message upon login/reload. Uncheck to disable."
+	L["Reset Settings"]="Reset Settings"
 
 	--Player
 	L["Player Swing Bar Settings"]="Player Swing Bar Settings"

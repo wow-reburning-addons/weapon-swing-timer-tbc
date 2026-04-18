@@ -537,6 +537,9 @@ end
 --- Alpha adjustments for 3 visual displays of the bars
 addon_data.castbar.UpdateConfigPanelValues = function()
     local panel = addon_data.castbar.config_frame
+    if not panel then
+        return
+    end
     local settings = character_castbar_settings
     panel.show_aimedshot_cast_bar_checkbox:SetChecked(settings.show_aimedshot_cast_bar)
     panel.show_multishot_cast_bar_checkbox:SetChecked(settings.show_multishot_cast_bar)

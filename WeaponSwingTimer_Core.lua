@@ -47,13 +47,20 @@ end
 
 addon_data.core.NormalizeCombatLogEvent = function(...)
     local event = select(2, ...)
-    if not event then
-        return nil
-    end
-
     local source_guid = select(3, ...)
     local dest_guid = select(6, ...)
     local payload_index = 9
+
+    if (type(event) ~= "string") or (not string.find(event, "_")) then
+        event = select(1, ...)
+        source_guid = select(2, ...)
+        dest_guid = select(5, ...)
+        payload_index = 8
+    end
+
+    if type(event) ~= "string" then
+        return nil
+    end
 
     local combat_info = {
         event = event,

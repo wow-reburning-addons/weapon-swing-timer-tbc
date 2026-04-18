@@ -13,10 +13,10 @@ Target: move WeaponSwingTimer to Ace3 infrastructure gradually, while keeping th
 
 ## Phase 2 - AceConfig Bridge (No Data Migration)
 
-- [ ] Introduce an `AceConfig` options table that reads/writes existing `character_*_settings`.
-- [ ] Register options via `AceConfig-3.0` + `AceConfigDialog-3.0` and add to Blizzard Interface Options.
-- [ ] Preserve the current settings semantics and default/reset behavior.
-- [ ] Keep old config panel callable during transition, then retire it once parity is complete.
+- [x] Introduce an `AceConfig` options table that reads/writes existing `character_*_settings`.
+- [x] Register options via `AceConfig-3.0` + `AceConfigDialog-3.0` and add to Blizzard Interface Options.
+- [x] Preserve default/reset behavior and immediate visual refresh on changes.
+- [x] Retire old panel path after adding the AceConfig bridge.
 
 ## Phase 3 - Cleanup and Parity Validation
 

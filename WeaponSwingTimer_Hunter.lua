@@ -624,6 +624,9 @@ end
 --- Alpha adjustments for 3 visual displays of the bars
 addon_data.hunter.UpdateConfigPanelValues = function()
     local panel = addon_data.hunter.config_frame
+    if not panel then
+        return
+    end
     local settings = character_hunter_settings
     panel.enabled_checkbox:SetChecked(settings.enabled)
     panel.show_multishot_clip_bar_checkbox:SetChecked(settings.show_multishot_clip_bar)

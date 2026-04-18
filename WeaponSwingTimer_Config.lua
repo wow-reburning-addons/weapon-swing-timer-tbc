@@ -11,62 +11,233 @@ else
 end
 
 local L = addon_data.localization_table
+local AceConfig = LibStub("AceConfig-3.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 addon_data.config = {}
 
+local function RefreshAllVisuals()
+    addon_data.core.UpdateAllVisualsOnSettingsChange()
+end
+
+local function SetAllBarsLocked(is_locked)
+    character_player_settings.is_locked = is_locked
+    character_target_settings.is_locked = is_locked
+    character_hunter_settings.is_locked = is_locked
+    character_castbar_settings.is_locked = is_locked
+
+    if addon_data.player and addon_data.player.frame then
+        addon_data.player.frame:EnableMouse(not is_locked)
+    end
+    if addon_data.target and addon_data.target.frame then
+        addon_data.target.frame:EnableMouse(not is_locked)
+    end
+    if addon_data.hunter and addon_data.hunter.frame then
+        addon_data.hunter.frame:EnableMouse(not is_locked)
+    end
+    if addon_data.castbar and addon_data.castbar.frame then
+        addon_data.castbar.frame:EnableMouse(not is_locked)
+    end
+
+    RefreshAllVisuals()
+end
+
+local function MakeToggle(settings_table, setting_key, text_key, desc_key)
+    return {
+        type = "toggle",
+        name = L[text_key],
+        desc = desc_key and L[desc_key] or nil,
+        get = function()
+            return settings_table[setting_key]
+        end,
+        set = function(_, value)
+            settings_table[setting_key] = value
+            RefreshAllVisuals()
+        end,
+    }
+end
+
+local function MakeRange(settings_table, setting_key, text_key, min_val, max_val, step_val)
+    return {
+        type = "range",
+        name = L[text_key],
+        min = min_val,
+        max = max_val,
+        step = step_val,
+        get = function()
+            return settings_table[setting_key]
+        end,
+        set = function(_, value)
+            settings_table[setting_key] = value
+            RefreshAllVisuals()
+        end,
+    }
+end
+
+local function BuildOptionsTable()
+    return {
+        type = "group",
+        name = addon_name,
+        childGroups = "tab",
+        args = {
+            global = {
+                type = "group",
+                name = L["Global Bar Settings"],
+                order = 1,
+                args = {
+                    lock_all = {
+                        type = "toggle",
+                        name = L[" Lock All Bars"],
+                        desc = L["Locks all of the swing bar frames, preventing them from being dragged."],
+                        order = 1,
+                        get = function()
+                            return character_player_settings.is_locked
+                        end,
+                        set = function(_, value)
+                            SetAllBarsLocked(value)
+                        end,
+                    },
+                    welcome_message = {
+                        type = "toggle",
+                        name = L[" Welcome Message"],
+                        desc = L["Displays the welcome message upon login/reload. Uncheck to disable."],
+                        order = 2,
+                        get = function()
+                            return character_core_settings.welcome_message
+                        end,
+                        set = function(_, value)
+                            character_core_settings.welcome_message = value
+                            RefreshAllVisuals()
+                        end,
+                    },
+                    reset_defaults = {
+                        type = "execute",
+                        name = L["Reset Settings"],
+                        order = 99,
+                        func = function()
+                            addon_data.core.RestoreAllDefaults()
+                            SetAllBarsLocked(character_player_settings.is_locked)
+                            RefreshAllVisuals()
+                        end,
+                    },
+                },
+            },
+            melee = {
+                type = "group",
+                name = L["Melee Settings"],
+                order = 2,
+                childGroups = "tab",
+                args = {
+                    player = {
+                        type = "group",
+                        name = L["Player Swing Bar Settings"],
+                        order = 1,
+                        args = {
+                            enabled = MakeToggle(character_player_settings, "enabled", "Enable", "Enables the player's swing bars."),
+                            show_offhand = MakeToggle(character_player_settings, "show_offhand", "Show Off-Hand", "Enables the player's off-hand swing bar."),
+                            show_border = MakeToggle(character_player_settings, "show_border", "Show border", "Enables the player bar's border."),
+                            classic_bars = MakeToggle(character_player_settings, "classic_bars", "Classic bars", "Enables the classic texture for the player's bars."),
+                            show_left_text = MakeToggle(character_player_settings, "show_left_text", "Show Left Text", "Enables the player's left side text."),
+                            show_right_text = MakeToggle(character_player_settings, "show_right_text", "Show Right Text", "Enables the player's right side text."),
+                            fill_empty = MakeToggle(character_player_settings, "fill_empty", "Fill / Empty", "Determines if the bar is full or empty when a swing is ready."),
+                            width = MakeRange(character_player_settings, "width", "Bar Width", 100, 500, 1),
+                            height = MakeRange(character_player_settings, "height", "Bar Height", 6, 40, 1),
+                            x_offset = MakeRange(character_player_settings, "x_offset", "X Offset", -600, 600, 1),
+                            y_offset = MakeRange(character_player_settings, "y_offset", "Y Offset", -600, 600, 1),
+                            in_combat_alpha = MakeRange(character_player_settings, "in_combat_alpha", "In Combat Alpha", 0, 1, 0.01),
+                            ooc_alpha = MakeRange(character_player_settings, "ooc_alpha", "Out of Combat Alpha", 0, 1, 0.01),
+                            backplane_alpha = MakeRange(character_player_settings, "backplane_alpha", "Backplane Alpha", 0, 1, 0.01),
+                        },
+                    },
+                    target = {
+                        type = "group",
+                        name = L["Target Swing Bar Settings"],
+                        order = 2,
+                        args = {
+                            enabled = MakeToggle(character_target_settings, "enabled", "Enable", "Enables the target's swing bars."),
+                            show_offhand = MakeToggle(character_target_settings, "show_offhand", "Show Off-Hand", "Enables the target's off-hand swing bar."),
+                            show_border = MakeToggle(character_target_settings, "show_border", "Show border", "Enables the target bar's border."),
+                            classic_bars = MakeToggle(character_target_settings, "classic_bars", "Classic bars", "Enables the classic texture for the target's bars."),
+                            show_left_text = MakeToggle(character_target_settings, "show_left_text", "Show Left Text", "Enables the target's left side text."),
+                            show_right_text = MakeToggle(character_target_settings, "show_right_text", "Show Right Text", "Enables the target's right side text."),
+                            fill_empty = MakeToggle(character_target_settings, "fill_empty", "Fill / Empty", "Determines if the bar is full or empty when a swing is ready."),
+                            width = MakeRange(character_target_settings, "width", "Bar Width", 100, 500, 1),
+                            height = MakeRange(character_target_settings, "height", "Bar Height", 6, 40, 1),
+                            x_offset = MakeRange(character_target_settings, "x_offset", "X Offset", -600, 600, 1),
+                            y_offset = MakeRange(character_target_settings, "y_offset", "Y Offset", -600, 600, 1),
+                            in_combat_alpha = MakeRange(character_target_settings, "in_combat_alpha", "In Combat Alpha", 0, 1, 0.01),
+                            ooc_alpha = MakeRange(character_target_settings, "ooc_alpha", "Out of Combat Alpha", 0, 1, 0.01),
+                            backplane_alpha = MakeRange(character_target_settings, "backplane_alpha", "Backplane Alpha", 0, 1, 0.01),
+                        },
+                    },
+                },
+            },
+            hunter = {
+                type = "group",
+                name = L["Hunter & Wand Settings"],
+                order = 3,
+                childGroups = "tab",
+                args = {
+                    shot = {
+                        type = "group",
+                        name = L["Hunter & Wand Shot Bar Settings"],
+                        order = 1,
+                        args = {
+                            enabled = MakeToggle(character_hunter_settings, "enabled", "Enable", nil),
+                            one_bar = MakeToggle(character_hunter_settings, "one_bar", "YaHT / One bar", "Changes the Auto Shot bar to a single bar that fills from left to right"),
+                            show_multishot_clip_bar = MakeToggle(character_hunter_settings, "show_multishot_clip_bar", "Multi-Shot clip bar", "Shows a bar that represents when a Multi-Shot would clip an Auto Shot."),
+                            show_autoshot_delay_timer = MakeToggle(character_hunter_settings, "show_autoshot_delay_timer", "Auto Shot delay timer", "Shows a timer that represents when Auto shot is delayed."),
+                            show_text = MakeToggle(character_hunter_settings, "show_text", "Show Text", "Enables the shot bar text."),
+                            show_border = MakeToggle(character_hunter_settings, "show_border", "Show border", nil),
+                            classic_bars = MakeToggle(character_hunter_settings, "classic_bars", "Classic bars", nil),
+                            width = MakeRange(character_hunter_settings, "width", "Bar Width", 100, 500, 1),
+                            height = MakeRange(character_hunter_settings, "height", "Bar Height", 6, 40, 1),
+                            x_offset = MakeRange(character_hunter_settings, "x_offset", "X Offset", -600, 600, 1),
+                            y_offset = MakeRange(character_hunter_settings, "y_offset", "Y Offset", -600, 600, 1),
+                            in_combat_alpha = MakeRange(character_hunter_settings, "in_combat_alpha", "In Combat Alpha", 0, 1, 0.01),
+                            ooc_alpha = MakeRange(character_hunter_settings, "ooc_alpha", "Out of Combat Alpha", 0, 1, 0.01),
+                            backplane_alpha = MakeRange(character_hunter_settings, "backplane_alpha", "Backplane Alpha", 0, 1, 0.01),
+                        },
+                    },
+                    castbar = {
+                        type = "group",
+                        name = L["Hunter Specific Settings"],
+                        order = 2,
+                        args = {
+                            enabled = MakeToggle(character_castbar_settings, "enabled", "Enable", nil),
+                            show_aimedshot_cast_bar = MakeToggle(character_castbar_settings, "show_aimedshot_cast_bar", "Aimed Shot cast bar", "Allows the cast bar to show Aimed Shot casts."),
+                            show_multishot_cast_bar = MakeToggle(character_castbar_settings, "show_multishot_cast_bar", "Multi-Shot cast bar", "Allows the cast bar to show Multi-Shot casts."),
+                            show_latency_bars = MakeToggle(character_castbar_settings, "show_latency_bars", "Latency bar", "Shows a bar that represents latency on cast bar."),
+                            show_cast_text = MakeToggle(character_castbar_settings, "show_cast_text", "Show Cast Text", "Enables the cast bar text."),
+                            width = MakeRange(character_castbar_settings, "width", "Bar Width", 100, 500, 1),
+                            height = MakeRange(character_castbar_settings, "height", "Bar Height", 6, 40, 1),
+                            x_offset = MakeRange(character_castbar_settings, "x_offset", "X Offset", -600, 600, 1),
+                            y_offset = MakeRange(character_castbar_settings, "y_offset", "Y Offset", -600, 600, 1),
+                            in_combat_alpha = MakeRange(character_castbar_settings, "in_combat_alpha", "In Combat Alpha", 0, 1, 0.01),
+                            backplane_alpha = MakeRange(character_castbar_settings, "backplane_alpha", "Backplane Alpha", 0, 1, 0.01),
+                        },
+                    },
+                },
+            },
+        },
+    }
+end
+
+addon_data.config.InitializeAceConfig = function()
+    local options = BuildOptionsTable()
+    AceConfig:RegisterOptionsTable(addon_name, options)
+    addon_data.config.config_parent_panel = AceConfigDialog:AddToBlizOptions(addon_name, addon_name)
+    addon_data.config.config_parent_panel.default = addon_data.config.OnDefault
+end
+
 addon_data.config.OnDefault = function()
     addon_data.core.RestoreAllDefaults()
-    addon_data.config.UpdateConfigValues()
+    SetAllBarsLocked(character_player_settings.is_locked)
+    RefreshAllVisuals()
 end
 
 addon_data.config.InitializeVisuals = function()
-
-    -- Add the parent panel
-    addon_data.config.config_parent_panel = CreateFrame("Frame", addon_name .. "ConfigParentPanel", UIParent)
-    local panel = addon_data.config.config_parent_panel
-    panel:SetSize(1, 1)
-    panel.global_panel = addon_data.config.CreateConfigPanel(panel)
-    panel.global_panel:SetPoint('TOPLEFT', 10, -10)
-    panel.global_panel:SetSize(1, 1)
-
-    panel.logo = panel:CreateTexture(nil, 'ARTWORK')	
-    panel.logo:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/LandingPage')	
-    panel.logo:SetSize(1024, 1024)	
-    panel.logo:SetPoint('TOPLEFT', 5, -10)
-
-    panel.name = "WeaponSwingTimer"
-    panel.default = addon_data.config.OnDefault
-    InterfaceOptions_AddCategory(panel)
-    
-    -- Add the melee panel
-    panel.config_melee_panel = CreateFrame("Frame", nil, panel)
-    panel.config_melee_panel:SetSize(1, 1)
-    panel.config_melee_panel.player_panel = addon_data.player.CreateConfigPanel(panel.config_melee_panel)
-    panel.config_melee_panel.player_panel:SetPoint('TOPLEFT', 0, 0)
-    panel.config_melee_panel.player_panel:SetSize(1, 1)
-    panel.config_melee_panel.target_panel = addon_data.target.CreateConfigPanel(panel.config_melee_panel)
-    panel.config_melee_panel.target_panel:SetPoint('TOPLEFT', 0, -275)
-    panel.config_melee_panel.target_panel:SetSize(1, 1)
-    panel.config_melee_panel.name = L["Melee Settings"]
-    panel.config_melee_panel.parent = panel.name
-    panel.config_melee_panel.default = addon_data.config.OnDefault
-    InterfaceOptions_AddCategory(panel.config_melee_panel)
-    
-    -- Add the hunter panel
-    panel.config_hunter_panel = CreateFrame("Frame", nil, panel)
-    panel.config_hunter_panel:SetSize(1, 1)
-    panel.config_hunter_panel.hunter_panel = addon_data.hunter.CreateConfigPanel(panel.config_hunter_panel)
-    panel.config_hunter_panel.hunter_panel:SetPoint('TOPLEFT', 0, 0)
-    panel.config_hunter_panel.hunter_panel:SetSize(1, 1)
-    panel.config_hunter_panel.castbar_panel = addon_data.castbar.CreateConfigPanel(panel.config_hunter_panel)	
-    panel.config_hunter_panel.castbar_panel:SetPoint('TOPLEFT', 0, -235)	
-    panel.config_hunter_panel.castbar_panel:SetSize(1, 1)
-    panel.config_hunter_panel.name = L["Hunter & Wand Settings"]
-    panel.config_hunter_panel.parent = panel.name
-    panel.config_hunter_panel.default = addon_data.config.OnDefault
-    InterfaceOptions_AddCategory(panel.config_hunter_panel)
-    
-
+    addon_data.config.InitializeAceConfig()
 end
 
 addon_data.config.TextFactory = function(parent, text, size)
@@ -185,6 +356,9 @@ end
 
 addon_data.config.UpdateConfigValues = function()
     local panel = addon_data.config.config_frame
+    if not panel then
+        return
+    end
     local settings = character_player_settings
     local settings_core = character_core_settings
 

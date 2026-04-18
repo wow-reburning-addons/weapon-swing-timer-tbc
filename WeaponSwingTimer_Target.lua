@@ -502,6 +502,9 @@ end
 
 addon_data.target.UpdateConfigPanelValues = function()
     local panel = addon_data.target.config_frame
+    if not panel then
+        return
+    end
     local settings = character_target_settings
     panel.enabled_checkbox:SetChecked(settings.enabled)
     panel.show_offhand_checkbox:SetChecked(settings.show_offhand)
