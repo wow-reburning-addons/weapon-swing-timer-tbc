@@ -100,7 +100,6 @@ local function BuildOptionsTable()
     return {
         type = "group",
         name = addon_name,
-        childGroups = "tab",
         args = {
             global = {
                 type = "group",
@@ -148,7 +147,6 @@ local function BuildOptionsTable()
                 type = "group",
                 name = L["config.melee.title"],
                 order = 2,
-                childGroups = "tab",
                 args = {
                     player = {
                         type = "group",
@@ -208,7 +206,6 @@ local function BuildOptionsTable()
                 type = "group",
                 name = L["config.hunter_wand.title"],
                 order = 3,
-                childGroups = "tab",
                 args = {
                     shot = {
                         type = "group",
@@ -263,8 +260,20 @@ end
 addon_data.config.InitializeAceConfig = function()
     local options = BuildOptionsTable()
     AceConfig:RegisterOptionsTable(addon_name, options)
+
     addon_data.config.config_parent_panel = AceConfigDialog:AddToBlizOptions(addon_name, addon_name)
+    addon_data.config.config_panels = {
+        global = AceConfigDialog:AddToBlizOptions(addon_name, L["config.global.title"], addon_name, "global"),
+        player = AceConfigDialog:AddToBlizOptions(addon_name, L["config.player.title"], addon_name, "melee", "player"),
+        target = AceConfigDialog:AddToBlizOptions(addon_name, L["config.target.title"], addon_name, "melee", "target"),
+        hunter_shot = AceConfigDialog:AddToBlizOptions(addon_name, L["config.hunter.shot.title"], addon_name, "hunter", "shot"),
+        hunter_castbar = AceConfigDialog:AddToBlizOptions(addon_name, L["config.hunter.specific.title"], addon_name, "hunter", "castbar"),
+    }
+
     addon_data.config.config_parent_panel.default = addon_data.config.OnDefault
+    for _, panel in pairs(addon_data.config.config_panels) do
+        panel.default = addon_data.config.OnDefault
+    end
 end
 
 addon_data.config.OnDefault = function()

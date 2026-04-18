@@ -966,7 +966,14 @@ function addon_data.core:OpenConfig(option)
         return
     end
 
-    local panel = addon_data.config and addon_data.config.config_parent_panel
+    local panel = nil
+    if addon_data.config and addon_data.config.config_panels then
+        panel = addon_data.config.config_panels.global
+    end
+    if not panel and addon_data.config then
+        panel = addon_data.config.config_parent_panel
+    end
+
     if InterfaceOptionsFrame_OpenToCategory then
         InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
         InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
