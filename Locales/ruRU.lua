@@ -11,8 +11,11 @@ if not L then
     return
 end
 
-addon_data.localization_table = L
-_G.WeaponSwingTimer_LocalizationTable = L
+local locale_table = AceLocale:GetLocale(addon_name, true)
+if locale_table then
+    addon_data.localization_table = locale_table
+    _G.WeaponSwingTimer_LocalizationTable = locale_table
+end
 
 L["core.welcome.version"] = "Спасибо за установку WeaponSwingTimer версии"
 L["core.welcome.hint"] = "от WatchYourSixx! Используйте |cFFFFC300/wst|r для дополнительных настроек."

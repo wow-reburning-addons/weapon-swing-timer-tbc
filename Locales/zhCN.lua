@@ -11,8 +11,11 @@ if not L then
     return
 end
 
-addon_data.localization_table = L
-_G.WeaponSwingTimer_LocalizationTable = L
+local locale_table = AceLocale:GetLocale(addon_name, true)
+if locale_table then
+    addon_data.localization_table = locale_table
+    _G.WeaponSwingTimer_LocalizationTable = locale_table
+end
 
 L["core.welcome.version"] = "感谢您安装WeaponSwingTimer版本！"
 L["core.welcome.hint"] = "作者：LeftHandedGlove，持续更新：WatchYourSixx，汉化：Cyanokaze。使用|cFFFFC300/wst|r获取更多选项。"
