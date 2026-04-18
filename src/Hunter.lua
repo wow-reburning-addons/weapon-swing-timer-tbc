@@ -16,6 +16,18 @@ if not getmetatable(addon_data.localization_table) then
 end
 local L = addon_data.localization_table
 
+local function GetPlayerMovementSpeed()
+    if GetUnitSpeed then
+        return GetUnitSpeed("player") or 0
+    end
+
+    if GetPlayerSpeed then
+        return GetPlayerSpeed() or 0
+    end
+
+    return 0
+end
+
 --- define addon structure from the above local variable
 addon_data.hunter = {}
 --- declare array for ranks of all abilities, cast times, cooldown, based on spell ID
@@ -281,7 +293,7 @@ end
 addon_data.hunter.OnUpdate = function(elapsed)
     if character_hunter_settings.enabled then
         -- Check to see if we have moved
-        addon_data.hunter.has_moved = (GetUnitSpeed("player") > 0)
+        addon_data.hunter.has_moved = (GetPlayerMovementSpeed() > 0)
 		
 		-- Check for feign death movement that causes swing reset
 		if addon_data.hunter.FeignStatus and addon_data.hunter.has_moved then
@@ -624,4 +636,3 @@ addon_data.hunter.InitializeVisuals = function()
     addon_data.hunter.UpdateVisualsOnUpdate()
     frame:Show()
 end
-
