@@ -670,7 +670,6 @@ addon_data.core.RestoreAllDefaults = function()
     if addon_data.core.db then
         addon_data.core.db:ResetDB()
         BindSettingsFromDB()
-        LoadAllSettings()
         addon_data.core.UpdateAllVisualsOnSettingsChange()
     end
 end
