@@ -17,6 +17,11 @@ L["core.welcome.version"] = "Спасибо за установку WeaponSwingT
 L["core.welcome.hint"] = "от WatchYourSixx! Используйте |cFFFFC300/wst|r для дополнительных настроек."
 L["core.error.unexpected_unit_misshandler"] = "Неожиданный тип юнита в MissHandler()."
 L["core.error.unexpected_unit_spellhandler"] = "Неожиданный тип юнита в SpellHandler()."
+L["core.test.running"] = "Запуск self-test для combat-log..."
+L["core.test.passed"] = "Self-test combat-log пройден (%d/%d)."
+L["core.test.failed"] = "Self-test combat-log не пройден (%d/%d)."
+L["core.test.failed_case_nil"] = "Тест '%s' не пройден: NormalizeCombatLogEvent() вернул nil."
+L["core.test.failed_case_field"] = "Тест '%s' не пройден: %s ожидалось '%s', получено '%s'."
 
 L["config.global.title"] = "Глобальные настройки полос"
 L["config.melee.title"] = "Настройки ближнего боя"

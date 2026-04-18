@@ -15,6 +15,7 @@ if not getmetatable(addon_data.localization_table) then
     })
 end
 local L = addon_data.localization_table
+local unpack_fn = unpack or table.unpack
 
 local AceAddon = LibStub("AceAddon-3.0")
 addon_data.core = AceAddon:NewAddon(addon_name, "AceEvent-3.0", "AceConsole-3.0")
@@ -60,6 +61,24 @@ addon_data.core.NormalizeCombatLogEvent = function(...)
         source_guid = select(2, ...)
         dest_guid = select(5, ...)
         payload_index = 8
+    end
+
+    -- Modern combat-log payloads can include hideCaster/raidFlags fields.
+    -- Detect those layouts and re-map GUID/payload indexes accordingly.
+    if (type(event) == "string") and string.find(event, "_") then
+        if select(2, ...) == event then
+            if type(select(3, ...)) == "boolean" then
+                source_guid = select(4, ...)
+                dest_guid = select(8, ...)
+                payload_index = 12
+            end
+        elseif select(1, ...) == event then
+            if type(select(2, ...)) == "boolean" then
+                source_guid = select(3, ...)
+                dest_guid = select(7, ...)
+                payload_index = 11
+            end
+        end
     end
 
     if type(event) ~= "string" then
@@ -726,6 +745,109 @@ addon_data.core.SpellHandler = function(unit, spell_id)
     end
 end
 
+addon_data.core.RunSelfTest = function()
+    addon_data.utils.PrintMsg(L["core.test.running"])
+
+    local tests = {
+        {
+            name = "legacy_swing_damage_mainhand",
+            args = {
+                "SWING_DAMAGE",
+                "Player-1-00000001", "Player", 0,
+                "Creature-1-00000002", "Target", 0,
+                120, 1, 0, 0, 0, false, false, false, false,
+            },
+            expected = {
+                event = "SWING_DAMAGE",
+                source_guid = "Player-1-00000001",
+                dest_guid = "Creature-1-00000002",
+                is_offhand = false,
+            },
+        },
+        {
+            name = "modern_swing_damage_offhand",
+            args = {
+                12345.67, "SWING_DAMAGE", false,
+                "Player-1-00000001", "Player", 0, 0,
+                "Creature-1-00000002", "Target", 0, 0,
+                95, 1, 0, 0, 0, false, false, false, true,
+            },
+            expected = {
+                event = "SWING_DAMAGE",
+                source_guid = "Player-1-00000001",
+                dest_guid = "Creature-1-00000002",
+                is_offhand = true,
+            },
+        },
+        {
+            name = "modern_spell_missed",
+            args = {
+                12346.01, "SPELL_MISSED", false,
+                "Player-1-00000001", "Player", 0, 0,
+                "Creature-1-00000002", "Target", 0, 0,
+                2973, "Raptor Strike", 1,
+                "DODGE",
+            },
+            expected = {
+                event = "SPELL_MISSED",
+                source_guid = "Player-1-00000001",
+                dest_guid = "Creature-1-00000002",
+                spell_id = 2973,
+                miss_type = "DODGE",
+            },
+        },
+    }
+
+    local passed = 0
+    local failed_messages = {}
+
+    for _, test_case in ipairs(tests) do
+        local combat_info = addon_data.core.NormalizeCombatLogEvent(unpack_fn(test_case.args))
+
+        if not combat_info then
+            table.insert(
+                failed_messages,
+                string.format(L["core.test.failed_case_nil"], test_case.name)
+            )
+        else
+            local test_failed = false
+            for field_name, expected_value in pairs(test_case.expected) do
+                local actual_value = combat_info[field_name]
+                if actual_value ~= expected_value then
+                    test_failed = true
+                    table.insert(
+                        failed_messages,
+                        string.format(
+                            L["core.test.failed_case_field"],
+                            test_case.name,
+                            field_name,
+                            tostring(expected_value),
+                            tostring(actual_value)
+                        )
+                    )
+                    break
+                end
+            end
+
+            if not test_failed then
+                passed = passed + 1
+            end
+        end
+    end
+
+    if passed == #tests then
+        addon_data.utils.PrintMsg(string.format(L["core.test.passed"], passed, #tests))
+        return true
+    end
+
+    addon_data.utils.PrintMsg(string.format(L["core.test.failed"], passed, #tests))
+    for _, fail_message in ipairs(failed_messages) do
+        addon_data.utils.PrintMsg(fail_message)
+    end
+
+    return false
+end
+
 function addon_data.core:OnInitialize()
     LoadAllSettings()
     self:RegisterChatCommand("wst", "OpenConfig")
@@ -771,6 +893,17 @@ end
 
 function addon_data.core:OnCombatLogEvent(event, ...)
     local combat_info = addon_data.core.NormalizeCombatLogEvent(...)
+
+    if (not combat_info) and (type(CombatLogGetCurrentEventInfo) == "function") then
+        combat_info = addon_data.core.NormalizeCombatLogEvent(CombatLogGetCurrentEventInfo())
+    end
+
+    if not combat_info then
+        combat_info = addon_data.core.NormalizeCombatLogEvent(
+            arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10,
+            arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20
+        )
+    end
 
     if not combat_info then
         return
@@ -823,6 +956,16 @@ function addon_data.core:OnUnitSpellCastFailedQuiet(event, ...)
 end
 
 function addon_data.core:OpenConfig(option)
+    local normalized_option = ""
+    if type(option) == "string" then
+        normalized_option = string.lower((string.gsub(option, "^%s*(.-)%s*$", "%1")))
+    end
+
+    if normalized_option == "test" then
+        addon_data.core.RunSelfTest()
+        return
+    end
+
     local panel = addon_data.config and addon_data.config.config_parent_panel
     if InterfaceOptionsFrame_OpenToCategory then
         InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
