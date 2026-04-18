@@ -27,6 +27,8 @@ L["config.global.lock_all.desc"] = "Locks all of the swing bar frames, preventin
 L["config.global.welcome_message.label"] = " Welcome Message"
 L["config.global.welcome_message.desc"] = "Displays the welcome message upon login/reload. Uncheck to disable."
 L["config.global.reset_settings"] = "Reset Settings"
+L["config.bliz_bridge.open.label"] = "Open Settings"
+L["config.bliz_bridge.open.desc"] = "Open the full WeaponSwingTimer settings in a separate window."
 
 L["config.player.title"] = "Player Swing Bar Settings"
 L["config.player.enable.desc"] = "Enables the player's swing bars."

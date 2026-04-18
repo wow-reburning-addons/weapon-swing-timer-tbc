@@ -18,6 +18,7 @@ local L = addon_data.localization_table
 local unpack_fn = unpack or table.unpack
 
 local AceAddon = LibStub("AceAddon-3.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 addon_data.core = AceAddon:NewAddon(addon_name, "AceEvent-3.0", "AceConsole-3.0")
 
 addon_data.core.all_timers = {
@@ -863,6 +864,7 @@ function addon_data.core:OnEnable()
     self:RegisterEvent("PLAYER_TARGET_CHANGED", "OnPlayerTargetChanged")
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "OnCombatLogEvent")
     self:RegisterEvent("UNIT_INVENTORY_CHANGED", "OnUnitInventoryChanged")
+    self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", "OnPlayerEquipmentChanged")
     self:RegisterEvent("START_AUTOREPEAT_SPELL", "OnStartAutorepeatSpell")
     self:RegisterEvent("STOP_AUTOREPEAT_SPELL", "OnStopAutorepeatSpell")
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", "OnUnitSpellCastSucceeded")
@@ -921,6 +923,24 @@ function addon_data.core:OnUnitInventoryChanged(event, ...)
     addon_data.hunter.OnInventoryChange()
 end
 
+function addon_data.core:OnPlayerEquipmentChanged(event, ...)
+    local slot_id = select(1, ...)
+
+    if type(slot_id) ~= "number" then
+        addon_data.player.OnInventoryChange(true)
+        addon_data.hunter.OnInventoryChange(true)
+        return
+    end
+
+    if (slot_id == 16) or (slot_id == 17) then
+        addon_data.player.OnInventoryChange(true)
+    end
+
+    if slot_id == 18 then
+        addon_data.hunter.OnInventoryChange(true)
+    end
+end
+
 function addon_data.core:OnStartAutorepeatSpell()
     addon_data.hunter.OnStartAutorepeatSpell()
 end
@@ -966,24 +986,12 @@ function addon_data.core:OpenConfig(option)
         return
     end
 
-    local panel = nil
-    if addon_data.config and addon_data.config.config_panels then
-        panel = addon_data.config.config_panels.global
-    end
-    if not panel and addon_data.config then
-        panel = addon_data.config.config_parent_panel
+    if addon_data.config and addon_data.config.OpenStandaloneConfig then
+        addon_data.config.OpenStandaloneConfig()
+        return
     end
 
-    if InterfaceOptionsFrame_OpenToCategory then
-        InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
-        InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
-    elseif InterfaceOptionsFrame_OpenToFrame and panel then
-        InterfaceOptionsFrame_OpenToFrame(panel)
-        InterfaceOptionsFrame_OpenToFrame(panel)
-    elseif InterfaceOptionsFrame then
-        ShowUIPanel(InterfaceOptionsFrame)
-        if panel and InterfaceOptionsList_DisplayPanel then
-            InterfaceOptionsList_DisplayPanel(panel)
-        end
+    if AceConfigDialog then
+        AceConfigDialog:Open(addon_name)
     end
 end

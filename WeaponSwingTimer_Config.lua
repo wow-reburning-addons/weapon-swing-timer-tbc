@@ -17,6 +17,7 @@ end
 local L = addon_data.localization_table
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+local bliz_bridge_app_name = addon_name .. "_BlizBridge"
 
 addon_data.config = {}
 
@@ -243,23 +244,39 @@ local function BuildOptionsTable()
     }
 end
 
+local function BuildBlizBridgeOptionsTable()
+    return {
+        type = "group",
+        name = addon_name,
+        args = {
+            open_standalone = {
+                type = "execute",
+                name = L["config.bliz_bridge.open.label"],
+                desc = L["config.bliz_bridge.open.desc"],
+                order = 1,
+                func = function()
+                    addon_data.config.OpenStandaloneConfig()
+                end,
+            },
+        },
+    }
+end
+
+addon_data.config.OpenStandaloneConfig = function(...)
+    AceConfigDialog:Open(addon_name, ...)
+end
+
 addon_data.config.InitializeAceConfig = function()
     local options = BuildOptionsTable()
     AceConfig:RegisterOptionsTable(addon_name, options)
 
-    addon_data.config.config_parent_panel = AceConfigDialog:AddToBlizOptions(addon_name, addon_name)
-    addon_data.config.config_panels = {
-        global = AceConfigDialog:AddToBlizOptions(addon_name, L["config.global.title"], addon_name, "global"),
-        player = AceConfigDialog:AddToBlizOptions(addon_name, L["config.player.title"], addon_name, "player"),
-        target = AceConfigDialog:AddToBlizOptions(addon_name, L["config.target.title"], addon_name, "target"),
-        hunter_shot = AceConfigDialog:AddToBlizOptions(addon_name, L["config.hunter.shot.title"], addon_name, "hunter_shot"),
-        hunter_castbar = AceConfigDialog:AddToBlizOptions(addon_name, L["config.hunter.specific.title"], addon_name, "hunter_castbar"),
-    }
+    local bliz_bridge_options = BuildBlizBridgeOptionsTable()
+    AceConfig:RegisterOptionsTable(bliz_bridge_app_name, bliz_bridge_options)
+
+    addon_data.config.config_parent_panel = AceConfigDialog:AddToBlizOptions(bliz_bridge_app_name, addon_name)
+    addon_data.config.config_panels = nil
 
     addon_data.config.config_parent_panel.default = addon_data.config.OnDefault
-    for _, panel in pairs(addon_data.config.config_panels) do
-        panel.default = addon_data.config.OnDefault
-    end
 end
 
 addon_data.config.OnDefault = function()
