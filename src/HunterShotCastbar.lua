@@ -16,9 +16,9 @@ if not getmetatable(addon_data.localization_table) then
 end
 local L = addon_data.localization_table
 --- define addon structure from the above local variable
-addon_data.castbar = {}
+addon_data.hunter_shot_castbar = {}
 --- declare array for ranks of all abilities, cast times, cooldown, based on spell ID
-addon_data.castbar.shot_spell_ids = {
+addon_data.hunter_shot_castbar.shot_spell_ids = {
 	[5384] = {spell_name = L["spell.feign_death"], rank = nil, cast_time = nil, cooldown = nil},
 	[19506] = {spell_name = L["spell.trueshot_aura"], rank = 1, cast_time = nil, cooldown = nil},
 	[20905] = {spell_name = L["spell.trueshot_aura"], rank = 2, cast_time = nil, cooldown = nil},
@@ -39,7 +39,7 @@ addon_data.castbar.shot_spell_ids = {
     [5019] = {spell_name = L["spell.shoot"], rank = nil, cast_time = nil, cooldown = nil}
 }
 --- is spell multi-shot defined by spell_id
-addon_data.castbar.is_spell_multi_shot = function(spell_id)
+addon_data.hunter_shot_castbar.is_spell_multi_shot = function(spell_id)
     if (spell_id == 2643) or (spell_id == 14288) or (spell_id == 14289) or 
        (spell_id == 14290) or (spell_id == 25294) or (spell_id == 27021) then
             return true
@@ -48,7 +48,7 @@ addon_data.castbar.is_spell_multi_shot = function(spell_id)
     end
 end
 --- is spell aimed shot defined by spell_id
-addon_data.castbar.is_spell_aimed_shot = function(spell_id)
+addon_data.hunter_shot_castbar.is_spell_aimed_shot = function(spell_id)
     if (spell_id == 19434) or (spell_id == 20900) or (spell_id == 20901) or 
        (spell_id == 20902) or (spell_id == 20903) or (spell_id == 20904) or (spell_id == 27065) then
             return true
@@ -57,15 +57,15 @@ addon_data.castbar.is_spell_aimed_shot = function(spell_id)
     end
 end
 --- is spell auto shot defined by spell_id
-addon_data.castbar.is_spell_auto_shot = function(spell_id)
+addon_data.hunter_shot_castbar.is_spell_auto_shot = function(spell_id)
     return (spell_id == 75)
 end
 --- is spell shoot defined by spell_id
-addon_data.castbar.is_spell_shoot = function(spell_id)
+addon_data.hunter_shot_castbar.is_spell_shoot = function(spell_id)
     return (spell_id == 5019)
 end
 --- default settings to be loaded on initial load and reset to default
-addon_data.castbar.default_settings = {
+addon_data.hunter_shot_castbar.default_settings = {
 	enabled = true,
 	width = 300,
 	height = 12,
@@ -85,98 +85,98 @@ addon_data.castbar.default_settings = {
 }
 --- Initializing variables for calculations and function calls
 
-addon_data.castbar.casting = false
-addon_data.castbar.casting_shot = false
-addon_data.castbar.casting_spell_id = 0
-addon_data.castbar.cast_timer = 0.1
-addon_data.castbar.cast_time = 0.1
-addon_data.castbar.last_failed_time = GetTime()
-addon_data.castbar.cast_start_time = GetTime()
-addon_data.castbar.hitcount = 0
-addon_data.castbar.initial_pushback_time = 0
-addon_data.castbar.initial_cast_time = 0
-addon_data.castbar.total_pushback = 0
+addon_data.hunter_shot_castbar.casting = false
+addon_data.hunter_shot_castbar.casting_shot = false
+addon_data.hunter_shot_castbar.casting_spell_id = 0
+addon_data.hunter_shot_castbar.cast_timer = 0.1
+addon_data.hunter_shot_castbar.cast_time = 0.1
+addon_data.hunter_shot_castbar.last_failed_time = GetTime()
+addon_data.hunter_shot_castbar.cast_start_time = GetTime()
+addon_data.hunter_shot_castbar.hitcount = 0
+addon_data.hunter_shot_castbar.initial_pushback_time = 0
+addon_data.hunter_shot_castbar.initial_cast_time = 0
+addon_data.hunter_shot_castbar.total_pushback = 0
 
-addon_data.castbar.CastPushback = function()
-	if addon_data.castbar.casting_shot then
+addon_data.hunter_shot_castbar.CastPushback = function()
+	if addon_data.hunter_shot_castbar.casting_shot then
 	        -- https://wow.gamepedia.com/index.php?title=Interrupt&oldid=305918
-        addon_data.castbar.pushbackValue = addon_data.castbar.pushbackValue or 1
+        addon_data.hunter_shot_castbar.pushbackValue = addon_data.hunter_shot_castbar.pushbackValue or 1
 
-		if ((GetTime() - addon_data.castbar.cast_start_time) < 1) and (addon_data.castbar.hitcount < 1) then
-			addon_data.castbar.initial_pushback_time = GetTime() - addon_data.castbar.cast_start_time
+		if ((GetTime() - addon_data.hunter_shot_castbar.cast_start_time) < 1) and (addon_data.hunter_shot_castbar.hitcount < 1) then
+			addon_data.hunter_shot_castbar.initial_pushback_time = GetTime() - addon_data.hunter_shot_castbar.cast_start_time
 		end
 
-		if addon_data.castbar.initial_pushback_time > 0 then
-			addon_data.castbar.cast_time = addon_data.castbar.cast_time + addon_data.castbar.initial_pushback_time
-			addon_data.castbar.initial_pushback_time = 0
-			addon_data.castbar.pushbackValue = 1
+		if addon_data.hunter_shot_castbar.initial_pushback_time > 0 then
+			addon_data.hunter_shot_castbar.cast_time = addon_data.hunter_shot_castbar.cast_time + addon_data.hunter_shot_castbar.initial_pushback_time
+			addon_data.hunter_shot_castbar.initial_pushback_time = 0
+			addon_data.hunter_shot_castbar.pushbackValue = 1
 		else
-			addon_data.castbar.cast_time = addon_data.castbar.cast_time + addon_data.castbar.pushbackValue
+			addon_data.hunter_shot_castbar.cast_time = addon_data.hunter_shot_castbar.cast_time + addon_data.hunter_shot_castbar.pushbackValue
 		end
 
-		addon_data.castbar.hitcount = addon_data.castbar.hitcount + 1
+		addon_data.hunter_shot_castbar.hitcount = addon_data.hunter_shot_castbar.hitcount + 1
 
-        addon_data.castbar.pushbackValue = max(addon_data.castbar.pushbackValue - 0.2, 0.2)
+        addon_data.hunter_shot_castbar.pushbackValue = max(addon_data.hunter_shot_castbar.pushbackValue - 0.2, 0.2)
 		
 		return
 	end
 end
 
 -- Selection of starting a timer for casting multi and handling of stopping auto timer from starting
-addon_data.castbar.StartCastingSpell = function(spell_id)
-    local settings = character_castbar_settings
+addon_data.hunter_shot_castbar.StartCastingSpell = function(spell_id)
+    local settings = character_hunter_shot_castbar_settings
 
-    if (GetTime() - addon_data.castbar.last_failed_time) > 0 then
-        if not addon_data.castbar.casting and UnitCanAttack('player', 'target') then
+    if (GetTime() - addon_data.hunter_shot_castbar.last_failed_time) > 0 then
+        if not addon_data.hunter_shot_castbar.casting and UnitCanAttack('player', 'target') then
             spell_name, _, _, cast_time, _, _, _ = GetSpellInfo(spell_id)
             if cast_time == nil then
 			
                 return 
             end
-            if not addon_data.castbar.is_spell_auto_shot(spell_id) and 
-               not addon_data.castbar.is_spell_shoot(spell_id) and cast_time > 0 then
-                    addon_data.castbar.casting = true
+            if not addon_data.hunter_shot_castbar.is_spell_auto_shot(spell_id) and 
+               not addon_data.hunter_shot_castbar.is_spell_shoot(spell_id) and cast_time > 0 then
+                    addon_data.hunter_shot_castbar.casting = true
             end
 
-			if (not addon_data.castbar.casting_shot) and (addon_data.castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar) or (addon_data.castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar) then
-				addon_data.castbar.cast_start_time = GetTime()
-				addon_data.castbar.casting_shot = true
-				addon_data.castbar.casting_spell_id = spell_id
-				addon_data.castbar.pushbackValue = 1
-				addon_data.castbar.initial_pushback_time = 0
-				addon_data.castbar.initial_cast_time = cast_time
+			if (not addon_data.hunter_shot_castbar.casting_shot) and (addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar) or (addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar) then
+				addon_data.hunter_shot_castbar.cast_start_time = GetTime()
+				addon_data.hunter_shot_castbar.casting_shot = true
+				addon_data.hunter_shot_castbar.casting_spell_id = spell_id
+				addon_data.hunter_shot_castbar.pushbackValue = 1
+				addon_data.hunter_shot_castbar.initial_pushback_time = 0
+				addon_data.hunter_shot_castbar.initial_cast_time = cast_time
                     
-				addon_data.castbar.cast_timer = 0
-				addon_data.castbar.frame.spell_bar:SetVertexColor(0.7, 0.4, 0, 1)
+				addon_data.hunter_shot_castbar.cast_timer = 0
+				addon_data.hunter_shot_castbar.frame.spell_bar:SetVertexColor(0.7, 0.4, 0, 1)
 
 				if settings.show_latency_bars then
 					local _, _, _, latency = GetNetStats()
-					addon_data.castbar.cast_time = addon_data.castbar.cast_time + (latency / 1000)
+					addon_data.hunter_shot_castbar.cast_time = addon_data.hunter_shot_castbar.cast_time + (latency / 1000)
 				end
 				if settings.show_cast_text then
-					addon_data.castbar.frame.spell_text_center:SetText(spell_name)
+					addon_data.hunter_shot_castbar.frame.spell_text_center:SetText(spell_name)
 				end
 			end	
 		end
 	end
 end
 
-addon_data.castbar.LoadSettings = function()
-    if not character_castbar_settings and addon_data.core and addon_data.core.db then
-        character_castbar_settings = addon_data.core.db.char.castbar
+addon_data.hunter_shot_castbar.LoadSettings = function()
+    if not character_hunter_shot_castbar_settings and addon_data.core and addon_data.core.db then
+        character_hunter_shot_castbar_settings = addon_data.core.db.char.hunter_shot_castbar
     end
 
-    addon_data.castbar.scan_tip = CreateFrame("GameTooltip", "WSTScanTip", nil, "GameTooltipTemplate")
-    addon_data.castbar.scan_tip:SetOwner(WorldFrame, "ANCHOR_NONE")
+    addon_data.hunter_shot_castbar.scan_tip = CreateFrame("GameTooltip", "WSTScanTip", nil, "GameTooltipTemplate")
+    addon_data.hunter_shot_castbar.scan_tip:SetOwner(WorldFrame, "ANCHOR_NONE")
 end
 
-addon_data.castbar.RestoreDefaults = function()
-    for setting, value in pairs(addon_data.castbar.default_settings) do
-        character_castbar_settings[setting] = value
+addon_data.hunter_shot_castbar.RestoreDefaults = function()
+    for setting, value in pairs(addon_data.hunter_shot_castbar.default_settings) do
+        character_hunter_shot_castbar_settings[setting] = value
     end
     _, class, _ = UnitClass("player")
-    character_castbar_settings.enabled = (class == "HUNTER" or class == "MAGE" or class == "PRIEST" or class == "WARLOCK")
-    addon_data.castbar.UpdateVisualsOnSettingsChange()
+    character_hunter_shot_castbar_settings.enabled = (class == "HUNTER" or class == "MAGE" or class == "PRIEST" or class == "WARLOCK")
+    addon_data.hunter_shot_castbar.UpdateVisualsOnSettingsChange()
 end
 
 
@@ -185,38 +185,38 @@ end
 --- Anything that changes cast times should go here. Need to add other forms of debuffs
 --- berserk haste is a simple calculation to derive the percent of berserking haste provided to the player from their health percent
 
-addon_data.castbar.UpdateCastTimer = function(elapsed)
+addon_data.hunter_shot_castbar.UpdateCastTimer = function(elapsed)
 	
-	local base_cast_time = addon_data.castbar.shot_spell_ids[addon_data.castbar.casting_spell_id].cast_time
+	local base_cast_time = addon_data.hunter_shot_castbar.shot_spell_ids[addon_data.hunter_shot_castbar.casting_spell_id].cast_time
 	
-	if (addon_data.castbar.cast_timer < 0.25) then
-		addon_data.castbar.cast_time = base_cast_time * addon_data.hunter.range_cast_speed_modifer
+	if (addon_data.hunter_shot_castbar.cast_timer < 0.25) then
+		addon_data.hunter_shot_castbar.cast_time = base_cast_time * addon_data.hunter_autoshot.range_cast_speed_modifer
 	end
 	
-    addon_data.castbar.cast_timer = GetTime() - addon_data.castbar.cast_start_time
-    if addon_data.castbar.cast_timer > addon_data.castbar.cast_time + 0.5 then
-        addon_data.castbar.OnUnitSpellCastFailed('player', 1)
+    addon_data.hunter_shot_castbar.cast_timer = GetTime() - addon_data.hunter_shot_castbar.cast_start_time
+    if addon_data.hunter_shot_castbar.cast_timer > addon_data.hunter_shot_castbar.cast_time + 0.5 then
+        addon_data.hunter_shot_castbar.OnUnitSpellCastFailed('player', 1)
     end
 	
-	addon_data.castbar.total_pushback = addon_data.castbar.cast_time - addon_data.castbar.initial_cast_time
+	addon_data.hunter_shot_castbar.total_pushback = addon_data.hunter_shot_castbar.cast_time - addon_data.hunter_shot_castbar.initial_cast_time
 end
 
-addon_data.castbar.OnUpdate = function(elapsed)
+addon_data.hunter_shot_castbar.OnUpdate = function(elapsed)
 	local _, class, _ = UnitClass("player")
-    if character_castbar_settings.enabled and (class == "HUNTER") then
+    if character_hunter_shot_castbar_settings.enabled and (class == "HUNTER") then
 		local curr_time = GetTime()
         -- Update the cast bar timers
-        if addon_data.castbar.casting_shot then
-            addon_data.castbar.UpdateCastTimer(elapsed)
+        if addon_data.hunter_shot_castbar.casting_shot then
+            addon_data.hunter_shot_castbar.UpdateCastTimer(elapsed)
         end
         -- Update the visuals
-        addon_data.castbar.UpdateVisualsOnUpdate()
+        addon_data.hunter_shot_castbar.UpdateVisualsOnUpdate()
 		
     end
 end
 
 -- Using combat log to detect pushback hits as well as starting to use spell cast events to replace the old version of detection that was implied
-addon_data.castbar.OnCombatLogUnfiltered = function(combat_info)
+addon_data.hunter_shot_castbar.OnCombatLogUnfiltered = function(combat_info)
     local event = combat_info.event
     local casterID = combat_info.source_guid
     local targetID = combat_info.dest_guid
@@ -228,9 +228,9 @@ addon_data.castbar.OnCombatLogUnfiltered = function(combat_info)
 				return
 			end
 		  
-				addon_data.hunter.FeignStatus = false
-				if addon_data.castbar.is_spell_multi_shot(spellID) or addon_data.castbar.is_spell_aimed_shot(spellID) then
-					addon_data.castbar.StartCastingSpell(spellID)
+				addon_data.hunter_autoshot.FeignStatus = false
+				if addon_data.hunter_shot_castbar.is_spell_multi_shot(spellID) or addon_data.hunter_shot_castbar.is_spell_aimed_shot(spellID) then
+					addon_data.hunter_shot_castbar.StartCastingSpell(spellID)
 					
 				end
 				
@@ -246,37 +246,37 @@ addon_data.castbar.OnCombatLogUnfiltered = function(combat_info)
 	if event == "SWING_DAMAGE" or event == "ENVIRONMENTAL_DAMAGE" or event == "RANGE_DAMAGE" or event == "SPELL_DAMAGE" then	
 	
 		if targetID == UnitGUID("player") then
-			addon_data.castbar.CastPushback()
+			addon_data.hunter_shot_castbar.CastPushback()
 		end
 	return end
 end
 
 --- upon spell cast succeeded, check if is auto shot and reset timer, adjust ranged speed based on haste. 
 --- If not auto shot, set bar to green *commented out
-addon_data.castbar.OnUnitSpellCastSucceeded = function(unit, spell_id)
+addon_data.hunter_shot_castbar.OnUnitSpellCastSucceeded = function(unit, spell_id)
 
-	local settings = character_castbar_settings
+	local settings = character_hunter_shot_castbar_settings
 
   if unit == 'player' then
 	
-	      addon_data.castbar.casting = false
+	      addon_data.hunter_shot_castbar.casting = false
         
-        if addon_data.castbar.shot_spell_ids[spell_id] then
-            spell_name = addon_data.castbar.shot_spell_ids[spell_id].spell_name
+        if addon_data.hunter_shot_castbar.shot_spell_ids[spell_id] then
+            spell_name = addon_data.hunter_shot_castbar.shot_spell_ids[spell_id].spell_name
 
-			if addon_data.castbar.is_spell_aimed_shot(spell_id) then
+			if addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id) then
 
-				addon_data.hunter.FeignDeath()
+				addon_data.hunter_autoshot.FeignDeath()
 			end
-			addon_data.castbar.casting_spell_id = 0
-            addon_data.castbar.casting_shot = false
+			addon_data.hunter_shot_castbar.casting_spell_id = 0
+            addon_data.hunter_shot_castbar.casting_shot = false
 			-- only show green bar overlay if setting is enabled
-			local spell_aimed_enabled = (addon_data.castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar)
-			local spell_multi_enabled = (addon_data.castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar)
+			local spell_aimed_enabled = (addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar)
+			local spell_multi_enabled = (addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar)
 			if (spell_aimed_enabled or spell_multi_enabled) then
-				addon_data.castbar.frame.spell_bar:SetVertexColor(0, 0.5, 0, 1)
-				addon_data.castbar.frame.spell_bar:SetWidth(character_castbar_settings.width)
-				addon_data.castbar.frame.spell_bar_text:SetText("0.0")
+				addon_data.hunter_shot_castbar.frame.spell_bar:SetVertexColor(0, 0.5, 0, 1)
+				addon_data.hunter_shot_castbar.frame.spell_bar:SetWidth(character_hunter_shot_castbar_settings.width)
+				addon_data.hunter_shot_castbar.frame.spell_bar_text:SetText("0.0")
 			end
             
         end
@@ -284,27 +284,27 @@ addon_data.castbar.OnUnitSpellCastSucceeded = function(unit, spell_id)
     end
 end
 
-addon_data.castbar.OnUnitSpellCastFailed = function(unit, spell_id)
-    local settings = character_castbar_settings
-    local frame = addon_data.castbar.frame
+addon_data.hunter_shot_castbar.OnUnitSpellCastFailed = function(unit, spell_id)
+    local settings = character_hunter_shot_castbar_settings
+    local frame = addon_data.hunter_shot_castbar.frame
 	-- only care about if multi fails to cast, so ignore others
-    if unit == 'player' and (addon_data.castbar.is_spell_multi_shot(spell_id) or addon_data.castbar.is_spell_aimed_shot(spell_id)) then
+    if unit == 'player' and (addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id) or addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id)) then
 
-        addon_data.castbar.last_failed_time = GetTime()
-        addon_data.castbar.casting = false
-		addon_data.castbar.pushbackValue = 1
-		addon_data.castbar.initial_pushback_time = 0
-		addon_data.castbar.hitcount = 0
+        addon_data.hunter_shot_castbar.last_failed_time = GetTime()
+        addon_data.hunter_shot_castbar.casting = false
+		addon_data.hunter_shot_castbar.pushbackValue = 1
+		addon_data.hunter_shot_castbar.initial_pushback_time = 0
+		addon_data.hunter_shot_castbar.hitcount = 0
 		
-        local spell_aimed_enabled = (addon_data.castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar)
-		local spell_multi_enabled = (addon_data.castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar)
-        if (addon_data.castbar.casting_spell_id > 0) and (spell_aimed_enabled or spell_multi_enabled) then
+        local spell_aimed_enabled = (addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar)
+		local spell_multi_enabled = (addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar)
+        if (addon_data.hunter_shot_castbar.casting_spell_id > 0) and (spell_aimed_enabled or spell_multi_enabled) then
 		
-            addon_data.castbar.casting_shot = false
-            addon_data.castbar.casting_spell_id = 0
+            addon_data.hunter_shot_castbar.casting_shot = false
+            addon_data.hunter_shot_castbar.casting_spell_id = 0
 			if spell_aimed_enabled or spell_multi_enabled then
-				addon_data.castbar.frame.spell_bar:SetVertexColor(0.7, 0, 0, 1)
-				if character_castbar_settings.show_text then
+				addon_data.hunter_shot_castbar.frame.spell_bar:SetVertexColor(0.7, 0, 0, 1)
+				if character_hunter_shot_castbar_settings.show_text then
 					frame.spell_text_center:SetText(L["cast.failed"])
 				end
 				frame.spell_bar:SetWidth(settings.width)
@@ -313,21 +313,21 @@ addon_data.castbar.OnUnitSpellCastFailed = function(unit, spell_id)
     end
 end
 
-addon_data.castbar.OnUnitSpellCastInterrupted = function(unit, spell_id)
-    local settings = character_castbar_settings
-	local frame = addon_data.castbar.frame
-	if unit == 'player' and (addon_data.castbar.is_spell_multi_shot(spell_id) or addon_data.castbar.is_spell_aimed_shot(spell_id)) then
+addon_data.hunter_shot_castbar.OnUnitSpellCastInterrupted = function(unit, spell_id)
+    local settings = character_hunter_shot_castbar_settings
+	local frame = addon_data.hunter_shot_castbar.frame
+	if unit == 'player' and (addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id) or addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id)) then
 	
-        addon_data.castbar.casting = false
-		addon_data.castbar.pushbackValue = 1
-		addon_data.castbar.initial_pushback_time = 0
-		addon_data.castbar.hitcount = 0
+        addon_data.hunter_shot_castbar.casting = false
+		addon_data.hunter_shot_castbar.pushbackValue = 1
+		addon_data.hunter_shot_castbar.initial_pushback_time = 0
+		addon_data.hunter_shot_castbar.hitcount = 0
 		
-		local spell_aimed_enabled = (addon_data.castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar)
-		local spell_multi_enabled = (addon_data.castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar)
-        if (addon_data.castbar.casting_spell_id > 0) and (spell_aimed_enabled or spell_multi_enabled) then
-            addon_data.castbar.casting_shot = false
-            addon_data.castbar.casting_spell_id = 0
+		local spell_aimed_enabled = (addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar)
+		local spell_multi_enabled = (addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar)
+        if (addon_data.hunter_shot_castbar.casting_spell_id > 0) and (spell_aimed_enabled or spell_multi_enabled) then
+            addon_data.hunter_shot_castbar.casting_shot = false
+            addon_data.hunter_shot_castbar.casting_spell_id = 0
 			
 			if spell_aimed_enabled or spell_multi_enabled then
 				frame.spell_bar:SetVertexColor(0.7, 0, 0, 1)
@@ -342,21 +342,21 @@ end
 
 --- Updating and initializing visuals
 --- ---------------------------------
-addon_data.castbar.UpdateVisualsOnUpdate = function()
-    local settings = character_castbar_settings
-    local frame = addon_data.castbar.frame
+addon_data.hunter_shot_castbar.UpdateVisualsOnUpdate = function()
+    local settings = character_hunter_shot_castbar_settings
+    local frame = addon_data.hunter_shot_castbar.frame
     if not frame or not frame.spell_bar then
         return
     end
 
-    if addon_data.core.in_combat or addon_data.castbar.casting_shot then
-		if addon_data.castbar.casting_shot then
+    if addon_data.core.in_combat or addon_data.hunter_shot_castbar.casting_shot then
+		if addon_data.hunter_shot_castbar.casting_shot then
 		
-			local time_left = math.max(addon_data.utils.SimpleRound(addon_data.castbar.cast_time - addon_data.castbar.cast_timer, 0.1), 0)
+			local time_left = math.max(addon_data.utils.SimpleRound(addon_data.hunter_shot_castbar.cast_time - addon_data.hunter_shot_castbar.cast_timer, 0.1), 0)
 			frame.spell_bar_text:SetText(string.format("%.1f", time_left))
 			frame:SetAlpha(1)
 			frame.spell_bar:SetVertexColor(0.8, 0.64, 0, 1)
-			new_width = settings.width * (addon_data.castbar.cast_timer / addon_data.castbar.cast_time)
+			new_width = settings.width * (addon_data.hunter_shot_castbar.cast_timer / addon_data.hunter_shot_castbar.cast_time)
 			new_width = math.min(new_width, settings.width)
 			frame.spell_bar:SetWidth(new_width)
 			frame.spell_spark:SetPoint('TOPLEFT', new_width - 8, 0)
@@ -378,10 +378,10 @@ addon_data.castbar.UpdateVisualsOnUpdate = function()
 			frame.spell_spark:Hide()
 		end
 		if settings.show_latency_bars then
-				if addon_data.castbar.casting_shot then
+				if addon_data.hunter_shot_castbar.casting_shot then
 				frame.cast_latency:Show()
 				_, _, _, latency = GetNetStats()
-				lag_width = settings.width * ((latency / 1000) / addon_data.castbar.cast_time)
+				lag_width = settings.width * ((latency / 1000) / addon_data.hunter_shot_castbar.cast_time)
 				frame.cast_latency:SetWidth(lag_width)
 			else
 				frame.cast_latency:Hide()
@@ -399,9 +399,9 @@ addon_data.castbar.UpdateVisualsOnUpdate = function()
     end
 end
 
-addon_data.castbar.UpdateVisualsOnSettingsChange = function()
-    local settings = character_castbar_settings
-    local frame = addon_data.castbar.frame
+addon_data.hunter_shot_castbar.UpdateVisualsOnSettingsChange = function()
+    local settings = character_hunter_shot_castbar_settings
+    local frame = addon_data.hunter_shot_castbar.frame
 	local _, class, _ = UnitClass("player")
 	if (settings.show_multishot_cast_bar or settings.show_aimedshot_cast_bar) and (class == "HUNTER") then
         frame:Show()
@@ -458,15 +458,15 @@ addon_data.castbar.UpdateVisualsOnSettingsChange = function()
     end
 end
 
-addon_data.castbar.OnFrameDragStart = function()
-    if not character_castbar_settings.is_locked then
-        addon_data.castbar.frame:StartMoving()
+addon_data.hunter_shot_castbar.OnFrameDragStart = function()
+    if not character_hunter_shot_castbar_settings.is_locked then
+        addon_data.hunter_shot_castbar.frame:StartMoving()
     end
 end
 
-addon_data.castbar.OnFrameDragStop = function()
-    local frame = addon_data.castbar.frame
-    local settings = character_castbar_settings
+addon_data.hunter_shot_castbar.OnFrameDragStop = function()
+    local frame = addon_data.hunter_shot_castbar.frame
+    local settings = character_hunter_shot_castbar_settings
     frame:StopMovingOrSizing()
     point, _, rel_point, x_offset, y_offset = frame:GetPoint()
     if x_offset < 20 and x_offset > -20 then
@@ -476,19 +476,19 @@ addon_data.castbar.OnFrameDragStop = function()
     settings.rel_point = rel_point
     settings.x_offset = addon_data.utils.SimpleRound(x_offset, 1)
     settings.y_offset = addon_data.utils.SimpleRound(y_offset, 1)
-    addon_data.castbar.UpdateVisualsOnSettingsChange()
+    addon_data.hunter_shot_castbar.UpdateVisualsOnSettingsChange()
 end
 
-addon_data.castbar.InitializeVisuals = function()
-    local settings = character_castbar_settings
+addon_data.hunter_shot_castbar.InitializeVisuals = function()
+    local settings = character_hunter_shot_castbar_settings
     -- Create the frame
-    addon_data.castbar.frame = CreateFrame("Frame", addon_name .. "HunterCastbarFrame", UIParent)
-    local frame = addon_data.castbar.frame
+    addon_data.hunter_shot_castbar.frame = CreateFrame("Frame", addon_name .. "HunterCastbarFrame", UIParent)
+    local frame = addon_data.hunter_shot_castbar.frame
     frame:SetMovable(true)
     frame:EnableMouse(not settings.is_locked)
     frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", addon_data.castbar.OnFrameDragStart)
-    frame:SetScript("OnDragStop", addon_data.castbar.OnFrameDragStop)
+    frame:SetScript("OnDragStart", addon_data.hunter_shot_castbar.OnFrameDragStart)
+    frame:SetScript("OnDragStop", addon_data.hunter_shot_castbar.OnFrameDragStop)
     -- Create the backplane
     frame.backplane = CreateFrame("Frame", addon_name .. "CastbarBackdropFrame", frame)
     frame.backplane:SetPoint('TOPLEFT', -9, 9)
@@ -514,8 +514,7 @@ addon_data.castbar.InitializeVisuals = function()
     -- Create the latency bar
     frame.cast_latency = frame:CreateTexture(nil,"OVERLAY")
     -- Show it off
-    addon_data.castbar.UpdateVisualsOnSettingsChange()
-    addon_data.castbar.UpdateVisualsOnUpdate()
+    addon_data.hunter_shot_castbar.UpdateVisualsOnSettingsChange()
+    addon_data.hunter_shot_castbar.UpdateVisualsOnUpdate()
     frame:Show()
 end
-

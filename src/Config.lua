@@ -28,8 +28,8 @@ end
 local function SetAllBarsLocked(is_locked)
     character_player_settings.is_locked = is_locked
     character_target_settings.is_locked = is_locked
-    character_hunter_settings.is_locked = is_locked
-    character_castbar_settings.is_locked = is_locked
+    character_hunter_autoshot_settings.is_locked = is_locked
+    character_hunter_shot_castbar_settings.is_locked = is_locked
 
     if addon_data.player and addon_data.player.frame then
         addon_data.player.frame:EnableMouse(not is_locked)
@@ -37,11 +37,11 @@ local function SetAllBarsLocked(is_locked)
     if addon_data.target and addon_data.target.frame then
         addon_data.target.frame:EnableMouse(not is_locked)
     end
-    if addon_data.hunter and addon_data.hunter.frame then
-        addon_data.hunter.frame:EnableMouse(not is_locked)
+    if addon_data.hunter_autoshot and addon_data.hunter_autoshot.frame then
+        addon_data.hunter_autoshot.frame:EnableMouse(not is_locked)
     end
-    if addon_data.castbar and addon_data.castbar.frame then
-        addon_data.castbar.frame:EnableMouse(not is_locked)
+    if addon_data.hunter_shot_castbar and addon_data.hunter_shot_castbar.frame then
+        addon_data.hunter_shot_castbar.frame:EnableMouse(not is_locked)
     end
 
     RefreshAllVisuals()
@@ -196,48 +196,48 @@ local function BuildOptionsTable()
                     backplane_alpha = MakeRange(character_target_settings, "backplane_alpha", "config.common.backplane_alpha.label", 0, 1, 0.01),
                 },
             },
-            hunter_shot = {
+            hunter_autoshot = {
                 type = "group",
                 name = L["config.hunter.shot.title"],
                 order = 4,
                 args = {
-                    enabled = MakeToggle(character_hunter_settings, "enabled", "config.common.enable.label", nil),
-                    one_bar = MakeToggle(character_hunter_settings, "one_bar", "config.hunter.one_bar.label", "config.hunter.one_bar.desc"),
-                    show_multishot_clip_bar = MakeToggle(character_hunter_settings, "show_multishot_clip_bar", "config.hunter.multishot_clip_bar.label", "config.hunter.multishot_clip_bar.desc"),
-                    show_autoshot_delay_timer = MakeToggle(character_hunter_settings, "show_autoshot_delay_timer", "config.hunter.autoshot_delay_timer.label", "config.hunter.autoshot_delay_timer.desc"),
-                    show_text = MakeToggle(character_hunter_settings, "show_text", "config.hunter.show_text.label", "config.hunter.show_text.desc"),
-                    show_border = MakeToggle(character_hunter_settings, "show_border", "config.common.show_border.label", nil),
-                    classic_bars = MakeToggle(character_hunter_settings, "classic_bars", "config.common.classic_bars.label", nil),
-                    width = MakeRange(character_hunter_settings, "width", "config.common.bar_width.label", 100, 500, 1),
-                    height = MakeRange(character_hunter_settings, "height", "config.common.bar_height.label", 6, 40, 1),
-                    fontsize = MakeRange(character_hunter_settings, "fontsize", "config.common.font_size.label", 6, 32, 1),
-                    x_offset = MakeRange(character_hunter_settings, "x_offset", "config.common.x_offset.label", -600, 600, 1),
-                    y_offset = MakeRange(character_hunter_settings, "y_offset", "config.common.y_offset.label", -600, 600, 1),
-                    cooldown_color = MakeColor(character_hunter_settings, "cooldown_r", "cooldown_g", "cooldown_b", "cooldown_a", "config.hunter.cooldown_color.label"),
-                    auto_cast_color = MakeColor(character_hunter_settings, "auto_cast_r", "auto_cast_g", "auto_cast_b", "auto_cast_a", "config.hunter.auto_cast_color.label"),
-                    multishot_clip_color = MakeColor(character_hunter_settings, "clip_r", "clip_g", "clip_b", "clip_a", "config.hunter.multishot_clip_color.label"),
-                    in_combat_alpha = MakeRange(character_hunter_settings, "in_combat_alpha", "config.common.in_combat_alpha.label", 0, 1, 0.01),
-                    ooc_alpha = MakeRange(character_hunter_settings, "ooc_alpha", "config.common.out_of_combat_alpha.label", 0, 1, 0.01),
-                    backplane_alpha = MakeRange(character_hunter_settings, "backplane_alpha", "config.common.backplane_alpha.label", 0, 1, 0.01),
+                    enabled = MakeToggle(character_hunter_autoshot_settings, "enabled", "config.common.enable.label", nil),
+                    one_bar = MakeToggle(character_hunter_autoshot_settings, "one_bar", "config.hunter.one_bar.label", "config.hunter.one_bar.desc"),
+                    show_multishot_clip_bar = MakeToggle(character_hunter_autoshot_settings, "show_multishot_clip_bar", "config.hunter.multishot_clip_bar.label", "config.hunter.multishot_clip_bar.desc"),
+                    show_autoshot_delay_timer = MakeToggle(character_hunter_autoshot_settings, "show_autoshot_delay_timer", "config.hunter.autoshot_delay_timer.label", "config.hunter.autoshot_delay_timer.desc"),
+                    show_text = MakeToggle(character_hunter_autoshot_settings, "show_text", "config.hunter.show_text.label", "config.hunter.show_text.desc"),
+                    show_border = MakeToggle(character_hunter_autoshot_settings, "show_border", "config.common.show_border.label", nil),
+                    classic_bars = MakeToggle(character_hunter_autoshot_settings, "classic_bars", "config.common.classic_bars.label", nil),
+                    width = MakeRange(character_hunter_autoshot_settings, "width", "config.common.bar_width.label", 100, 500, 1),
+                    height = MakeRange(character_hunter_autoshot_settings, "height", "config.common.bar_height.label", 6, 40, 1),
+                    fontsize = MakeRange(character_hunter_autoshot_settings, "fontsize", "config.common.font_size.label", 6, 32, 1),
+                    x_offset = MakeRange(character_hunter_autoshot_settings, "x_offset", "config.common.x_offset.label", -600, 600, 1),
+                    y_offset = MakeRange(character_hunter_autoshot_settings, "y_offset", "config.common.y_offset.label", -600, 600, 1),
+                    cooldown_color = MakeColor(character_hunter_autoshot_settings, "cooldown_r", "cooldown_g", "cooldown_b", "cooldown_a", "config.hunter.cooldown_color.label"),
+                    auto_cast_color = MakeColor(character_hunter_autoshot_settings, "auto_cast_r", "auto_cast_g", "auto_cast_b", "auto_cast_a", "config.hunter.auto_cast_color.label"),
+                    multishot_clip_color = MakeColor(character_hunter_autoshot_settings, "clip_r", "clip_g", "clip_b", "clip_a", "config.hunter.multishot_clip_color.label"),
+                    in_combat_alpha = MakeRange(character_hunter_autoshot_settings, "in_combat_alpha", "config.common.in_combat_alpha.label", 0, 1, 0.01),
+                    ooc_alpha = MakeRange(character_hunter_autoshot_settings, "ooc_alpha", "config.common.out_of_combat_alpha.label", 0, 1, 0.01),
+                    backplane_alpha = MakeRange(character_hunter_autoshot_settings, "backplane_alpha", "config.common.backplane_alpha.label", 0, 1, 0.01),
                 },
             },
-            hunter_castbar = {
+            hunter_shot_castbar = {
                 type = "group",
                 name = L["config.hunter.specific.title"],
                 order = 5,
                 args = {
-                    enabled = MakeToggle(character_castbar_settings, "enabled", "config.common.enable.label", nil),
-                    show_aimedshot_cast_bar = MakeToggle(character_castbar_settings, "show_aimedshot_cast_bar", "config.castbar.aimed_shot.label", "config.castbar.aimed_shot.desc"),
-                    show_multishot_cast_bar = MakeToggle(character_castbar_settings, "show_multishot_cast_bar", "config.castbar.multi_shot.label", "config.castbar.multi_shot.desc"),
-                    show_latency_bars = MakeToggle(character_castbar_settings, "show_latency_bars", "config.castbar.latency.label", "config.castbar.latency.desc"),
-                    show_cast_text = MakeToggle(character_castbar_settings, "show_cast_text", "config.castbar.show_cast_text.label", "config.castbar.show_cast_text.desc"),
-                    width = MakeRange(character_castbar_settings, "width", "config.common.bar_width.label", 100, 500, 1),
-                    height = MakeRange(character_castbar_settings, "height", "config.common.bar_height.label", 6, 40, 1),
-                    fontsize = MakeRange(character_castbar_settings, "fontsize", "config.common.font_size.label", 6, 32, 1),
-                    x_offset = MakeRange(character_castbar_settings, "x_offset", "config.common.x_offset.label", -600, 600, 1),
-                    y_offset = MakeRange(character_castbar_settings, "y_offset", "config.common.y_offset.label", -600, 600, 1),
-                    in_combat_alpha = MakeRange(character_castbar_settings, "in_combat_alpha", "config.common.in_combat_alpha.label", 0, 1, 0.01),
-                    backplane_alpha = MakeRange(character_castbar_settings, "backplane_alpha", "config.common.backplane_alpha.label", 0, 1, 0.01),
+                    enabled = MakeToggle(character_hunter_shot_castbar_settings, "enabled", "config.common.enable.label", nil),
+                    show_aimedshot_cast_bar = MakeToggle(character_hunter_shot_castbar_settings, "show_aimedshot_cast_bar", "config.castbar.aimed_shot.label", "config.castbar.aimed_shot.desc"),
+                    show_multishot_cast_bar = MakeToggle(character_hunter_shot_castbar_settings, "show_multishot_cast_bar", "config.castbar.multi_shot.label", "config.castbar.multi_shot.desc"),
+                    show_latency_bars = MakeToggle(character_hunter_shot_castbar_settings, "show_latency_bars", "config.castbar.latency.label", "config.castbar.latency.desc"),
+                    show_cast_text = MakeToggle(character_hunter_shot_castbar_settings, "show_cast_text", "config.castbar.show_cast_text.label", "config.castbar.show_cast_text.desc"),
+                    width = MakeRange(character_hunter_shot_castbar_settings, "width", "config.common.bar_width.label", 100, 500, 1),
+                    height = MakeRange(character_hunter_shot_castbar_settings, "height", "config.common.bar_height.label", 6, 40, 1),
+                    fontsize = MakeRange(character_hunter_shot_castbar_settings, "fontsize", "config.common.font_size.label", 6, 32, 1),
+                    x_offset = MakeRange(character_hunter_shot_castbar_settings, "x_offset", "config.common.x_offset.label", -600, 600, 1),
+                    y_offset = MakeRange(character_hunter_shot_castbar_settings, "y_offset", "config.common.y_offset.label", -600, 600, 1),
+                    in_combat_alpha = MakeRange(character_hunter_shot_castbar_settings, "in_combat_alpha", "config.common.in_combat_alpha.label", 0, 1, 0.01),
+                    backplane_alpha = MakeRange(character_hunter_shot_castbar_settings, "backplane_alpha", "config.common.backplane_alpha.label", 0, 1, 0.01),
                 },
             },
         },

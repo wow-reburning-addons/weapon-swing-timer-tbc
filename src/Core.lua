@@ -57,8 +57,8 @@ local function BuildAceDBDefaults()
     local _, player_class = UnitClass("player")
     local ranged_enabled = (player_class == "HUNTER") or (player_class == "MAGE") or (player_class == "PRIEST") or (player_class == "WARLOCK")
 
-    local hunter_defaults = CopyTable(addon_data.hunter and addon_data.hunter.default_settings)
-    local castbar_defaults = CopyTable(addon_data.castbar and addon_data.castbar.default_settings)
+    local hunter_defaults = CopyTable(addon_data.hunter_autoshot and addon_data.hunter_autoshot.default_settings)
+    local castbar_defaults = CopyTable(addon_data.hunter_shot_castbar and addon_data.hunter_shot_castbar.default_settings)
     hunter_defaults.enabled = ranged_enabled
     castbar_defaults.enabled = ranged_enabled
 
@@ -67,8 +67,8 @@ local function BuildAceDBDefaults()
             core = CopyTable(addon_data.core.default_settings),
             player = CopyTable(addon_data.player and addon_data.player.default_settings),
             target = CopyTable(addon_data.target and addon_data.target.default_settings),
-            hunter = hunter_defaults,
-            castbar = castbar_defaults,
+            hunter_autoshot = hunter_defaults,
+            hunter_shot_castbar = castbar_defaults,
         },
     }
 end
@@ -82,8 +82,8 @@ local function BindSettingsFromDB()
     character_core_settings = db_char.core
     character_player_settings = db_char.player
     character_target_settings = db_char.target
-    character_hunter_settings = db_char.hunter
-    character_castbar_settings = db_char.castbar
+    character_hunter_autoshot_settings = db_char.hunter_autoshot
+    character_hunter_shot_castbar_settings = db_char.hunter_shot_castbar
 end
 
 addon_data.core.in_combat = false
@@ -662,8 +662,8 @@ local function LoadAllSettings()
     if addon_data.core and addon_data.core.LoadSettings then addon_data.core.LoadSettings() end
     if addon_data.player and addon_data.player.LoadSettings then addon_data.player.LoadSettings() end
     if addon_data.target and addon_data.target.LoadSettings then addon_data.target.LoadSettings() end
-    if addon_data.hunter and addon_data.hunter.LoadSettings then addon_data.hunter.LoadSettings() end
-	if addon_data.castbar and addon_data.castbar.LoadSettings then addon_data.castbar.LoadSettings() end
+    if addon_data.hunter_autoshot and addon_data.hunter_autoshot.LoadSettings then addon_data.hunter_autoshot.LoadSettings() end
+	if addon_data.hunter_shot_castbar and addon_data.hunter_shot_castbar.LoadSettings then addon_data.hunter_shot_castbar.LoadSettings() end
 end
 
 addon_data.core.RestoreAllDefaults = function()
@@ -677,8 +677,8 @@ end
 local function InitializeAllVisuals()
     if addon_data.player and addon_data.player.InitializeVisuals then addon_data.player.InitializeVisuals() end
     if addon_data.target and addon_data.target.InitializeVisuals then addon_data.target.InitializeVisuals() end
-    if addon_data.hunter and addon_data.hunter.InitializeVisuals then addon_data.hunter.InitializeVisuals() end
-	if addon_data.castbar and addon_data.castbar.InitializeVisuals then addon_data.castbar.InitializeVisuals() end
+    if addon_data.hunter_autoshot and addon_data.hunter_autoshot.InitializeVisuals then addon_data.hunter_autoshot.InitializeVisuals() end
+	if addon_data.hunter_shot_castbar and addon_data.hunter_shot_castbar.InitializeVisuals then addon_data.hunter_shot_castbar.InitializeVisuals() end
     if addon_data.config and addon_data.config.InitializeVisuals then addon_data.config.InitializeVisuals() end
 end
 
@@ -686,8 +686,8 @@ end
 addon_data.core.UpdateAllVisualsOnSettingsChange = function()
     addon_data.player.UpdateVisualsOnSettingsChange()
     addon_data.target.UpdateVisualsOnSettingsChange()
-    addon_data.hunter.UpdateVisualsOnSettingsChange()
-	addon_data.castbar.UpdateVisualsOnSettingsChange()
+    addon_data.hunter_autoshot.UpdateVisualsOnSettingsChange()
+	addon_data.hunter_shot_castbar.UpdateVisualsOnSettingsChange()
 end
 
 addon_data.core.LoadSettings = function()
@@ -701,8 +701,8 @@ end
 local function CoreFrame_OnUpdate(self, elapsed)
     if addon_data.player and addon_data.player.OnUpdate then addon_data.player.OnUpdate(elapsed) end
     if addon_data.target and addon_data.target.OnUpdate then addon_data.target.OnUpdate(elapsed) end
-    if addon_data.hunter and addon_data.hunter.OnUpdate then addon_data.hunter.OnUpdate(elapsed) end
-	if addon_data.castbar and addon_data.castbar.OnUpdate then addon_data.castbar.OnUpdate(elapsed) end
+    if addon_data.hunter_autoshot and addon_data.hunter_autoshot.OnUpdate then addon_data.hunter_autoshot.OnUpdate(elapsed) end
+	if addon_data.hunter_shot_castbar and addon_data.hunter_shot_castbar.OnUpdate then addon_data.hunter_shot_castbar.OnUpdate(elapsed) end
 end
 
 addon_data.core.MissHandler = function(unit, miss_type, is_offhand)
@@ -929,7 +929,7 @@ end
 function addon_data.core:OnPlayerEnteringWorld()
     addon_data.core.in_combat = UnitAffectingCombat("player") and true or false
     addon_data.player.OnInventoryChange(true)
-    addon_data.hunter.OnInventoryChange(true)
+    addon_data.hunter_autoshot.OnInventoryChange(true)
     addon_data.target.OnPlayerTargetChanged()
 end
 
@@ -953,14 +953,14 @@ function addon_data.core:OnCombatLogEvent(event, ...)
 
     addon_data.player.OnCombatLogUnfiltered(combat_info)
     addon_data.target.OnCombatLogUnfiltered(combat_info)
-    addon_data.hunter.OnCombatLogUnfiltered(combat_info)
-    addon_data.castbar.OnCombatLogUnfiltered(combat_info)
+    addon_data.hunter_autoshot.OnCombatLogUnfiltered(combat_info)
+    addon_data.hunter_shot_castbar.OnCombatLogUnfiltered(combat_info)
 end
 
 function addon_data.core:OnUnitInventoryChanged(event, ...)
     addon_data.player.OnInventoryChange()
     addon_data.target.OnInventoryChange()
-    addon_data.hunter.OnInventoryChange()
+    addon_data.hunter_autoshot.OnInventoryChange()
 end
 
 function addon_data.core:OnPlayerEquipmentChanged(event, ...)
@@ -968,7 +968,7 @@ function addon_data.core:OnPlayerEquipmentChanged(event, ...)
 
     if type(slot_id) ~= "number" then
         addon_data.player.OnInventoryChange(true)
-        addon_data.hunter.OnInventoryChange(true)
+        addon_data.hunter_autoshot.OnInventoryChange(true)
         return
     end
 
@@ -977,42 +977,42 @@ function addon_data.core:OnPlayerEquipmentChanged(event, ...)
     end
 
     if slot_id == 18 then
-        addon_data.hunter.OnInventoryChange(true)
+        addon_data.hunter_autoshot.OnInventoryChange(true)
     end
 end
 
 function addon_data.core:OnStartAutorepeatSpell()
-    addon_data.hunter.OnStartAutorepeatSpell()
+    addon_data.hunter_autoshot.OnStartAutorepeatSpell()
 end
 
 function addon_data.core:OnStopAutorepeatSpell()
-    addon_data.hunter.OnStopAutorepeatSpell()
+    addon_data.hunter_autoshot.OnStopAutorepeatSpell()
 end
 
 function addon_data.core:OnUnitSpellCastSucceeded(event, ...)
     local unit = select(1, ...)
     local spell_id = select(3, ...)
-    addon_data.hunter.OnUnitSpellCastSucceeded(unit, spell_id)
-    addon_data.castbar.OnUnitSpellCastSucceeded(unit, spell_id)
+    addon_data.hunter_autoshot.OnUnitSpellCastSucceeded(unit, spell_id)
+    addon_data.hunter_shot_castbar.OnUnitSpellCastSucceeded(unit, spell_id)
 end
 
 function addon_data.core:OnUnitSpellCastFailed(event, ...)
     local unit = select(1, ...)
     local spell_id = select(3, ...)
-    addon_data.castbar.OnUnitSpellCastFailed(unit, spell_id)
+    addon_data.hunter_shot_castbar.OnUnitSpellCastFailed(unit, spell_id)
 end
 
 function addon_data.core:OnUnitSpellCastInterrupted(event, ...)
     local unit = select(1, ...)
     local spell_id = select(3, ...)
-    addon_data.hunter.OnUnitSpellCastInterrupted(unit, spell_id)
-    addon_data.castbar.OnUnitSpellCastInterrupted(unit, spell_id)
+    addon_data.hunter_autoshot.OnUnitSpellCastInterrupted(unit, spell_id)
+    addon_data.hunter_shot_castbar.OnUnitSpellCastInterrupted(unit, spell_id)
 end
 
 function addon_data.core:OnUnitSpellCastFailedQuiet(event, ...)
     local unit = select(1, ...)
     local spell_id = select(3, ...)
-    addon_data.hunter.OnUnitSpellCastFailedQuiet(unit, spell_id)
+    addon_data.hunter_autoshot.OnUnitSpellCastFailedQuiet(unit, spell_id)
 end
 
 function addon_data.core:OpenConfig(option)

@@ -6,26 +6,26 @@
 
 ## Source of Truth
 - Load order is defined in `WeaponSwingTimer.toc`; keep dependency order intact when adding files:
-  `localization.lua -> WeaponSwingTimer_ranged_DB.lua -> Utils -> Player -> Target -> Castbar -> Hunter -> Config -> Core`.
+  `localization.lua -> WeaponSwingTimer_ranged_DB.lua -> Utils -> Player -> Target -> HunterShotCastbar -> HunterAutoShot -> Config -> Core`.
 - `WeaponSwingTimer_Core.lua` is the event hub/entrypoint: registers events on `ADDON_LOADED`, then dispatches to module handlers.
 
 ## Runtime Architecture (What To Touch)
 - Player melee logic: `WeaponSwingTimer_Player.lua`.
 - Target melee logic: `WeaponSwingTimer_Target.lua`.
-- Hunter/wand shot timer logic: `WeaponSwingTimer_Hunter.lua`.
-- Aimed/Multi castbar and pushback logic: `WeaponSwingTimer_Castbar.lua`.
+- Hunter/wand shot timer logic: `WeaponSwingTimer_HunterAutoShot.lua`.
+- Aimed/Multi castbar and pushback logic: `WeaponSwingTimer_HunterShotCastbar.lua`.
 - Shared helpers and chat output: `WeaponSwingTimer_Utils.lua`.
 - Localized strings are centralized in `localization.lua` (`L[...]` table); do not hardcode user-facing text in module files.
 
 ## Compatibility Hotspots for 2.4.3 Porting
 - Combat log parsing currently depends on `CombatLogGetCurrentEventInfo()` in `WeaponSwingTimer_Core.lua`; this is a likely incompatibility point for 2.4.3 clients.
-- Combat handlers in `Player/Target/Hunter/Castbar` unpack modern combat-log tuple layouts; if event payload shape changes, update all four together.
+- Combat handlers in `Player/Target/HunterAutoShot/HunterShotCastbar` unpack modern combat-log tuple layouts; if event payload shape changes, update all four together.
 - `.toc` currently declares `## Interface: 20502`; keep interface value aligned with the actual target client build you run.
 
 ## Data and State Gotchas
 - Per-character saved variable names are fixed in `WeaponSwingTimer.toc`; preserve names to avoid wiping user settings.
 - Hunter speed math depends on `addon_data.ranged_DB.item_ids[weaponID].base_speed` from `WeaponSwingTimer_ranged_DB.lua`; guard unknown/unsupported item IDs when touching this path.
-- Config UI is opened via slash commands `/wst`, `/weaponswingtimer`, `/WeaponSwingTimer` (wired in `WeaponSwingTimer_Core.lua`).
+- Config UI is opened via slash commands `/wst`, `/weaponswingtimer` (wired in `WeaponSwingTimer_Core.lua`).
 
 ## Verification (Manual Only)
 - Install/update folder under `Interface/AddOns/WeaponSwingTimer`, then `/reload` in-game.

@@ -126,7 +126,6 @@ Core must handle at least:
 
 Addon options must open from:
 
-- `/WeaponSwingTimer`
 - `/weaponswingtimer`
 - `/wst`
 
@@ -150,8 +149,8 @@ Saved variables are per-character and must preserve existing names to avoid user
 - `character_core_settings`
 - `character_player_settings`
 - `character_target_settings`
-- `character_hunter_settings`
-- `character_castbar_settings`
+- `character_hunter_autoshot_settings`
+- `character_hunter_shot_castbar_settings`
 
 ## 9) Localization Rules
 

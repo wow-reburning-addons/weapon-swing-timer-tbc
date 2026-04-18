@@ -46,7 +46,7 @@ src\RangedDB.lua
 src\Utils.lua
 src\Player.lua
 src\Target.lua
-src\Castbar.lua
-src\Hunter.lua
+src\HunterShotCastbar.lua
+src\HunterAutoShot.lua
 src\Config.lua
 src\Core.lua
