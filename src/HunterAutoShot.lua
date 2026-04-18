@@ -54,28 +54,44 @@ addon_data.hunter_autoshot.shot_spell_ids = {
 }
 --- is spell multi-shot defined by spell_id
 addon_data.hunter_autoshot.is_spell_multi_shot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.multi_shot"]
+    end
+
     if (spell_id == 2643) or (spell_id == 14288) or (spell_id == 14289) or 
        (spell_id == 14290) or (spell_id == 25294) or (spell_id == 27021) then
-            return true
+             return true
     else
             return false
     end
 end
 --- is spell aimed shot defined by spell_id
 addon_data.hunter_autoshot.is_spell_aimed_shot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.aimed_shot"]
+    end
+
     if (spell_id == 19434) or (spell_id == 20900) or (spell_id == 20901) or 
        (spell_id == 20902) or (spell_id == 20903) or (spell_id == 20904) or (spell_id == 27065) then
-            return true
+             return true
     else
             return false
     end
 end
 --- is spell auto shot defined by spell_id
 addon_data.hunter_autoshot.is_spell_auto_shot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.auto_shot"]
+    end
+
     return (spell_id == 75)
 end
 --- is spell shoot defined by spell_id
 addon_data.hunter_autoshot.is_spell_shoot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.shoot"]
+    end
+
     return (spell_id == 5019)
 end
 --- default settings to be loaded on initial load and reset to default
@@ -337,6 +353,13 @@ addon_data.hunter_autoshot.OnCombatLogUnfiltered = function(combat_info)
     local spellID = combat_info.spell_id
 
 	if casterID == UnitGUID("player") then
+
+		if (event == "RANGE_DAMAGE" or event == "RANGE_MISSED") and (addon_data.hunter_autoshot.is_spell_auto_shot(spellID) or addon_data.hunter_autoshot.is_spell_shoot(spellID)) then
+			addon_data.hunter_autoshot.FeignFullReset = false
+			addon_data.hunter_autoshot.last_shot_time = GetTime()
+			addon_data.hunter_autoshot.ResetShotTimer()
+			addon_data.hunter_autoshot.casting_auto = false
+		return end
 	
 		if event == "SPELL_CAST_START" then
 			if not spellID then
@@ -368,11 +391,19 @@ addon_data.hunter_autoshot.OnUnitSpellCastSucceeded = function(unit, spell_id)
 
 	local settings = character_hunter_autoshot_settings
 	if unit == 'player' then
+		local is_auto_shot = addon_data.hunter_autoshot.is_spell_auto_shot(spell_id)
+		local is_shoot = addon_data.hunter_autoshot.is_spell_shoot(spell_id)
+		local is_aimed_shot = addon_data.hunter_autoshot.is_spell_aimed_shot(spell_id)
+		local spell_name = nil
+		if type(spell_id) == "number" and addon_data.hunter_autoshot.shot_spell_ids[spell_id] then
+			spell_name = addon_data.hunter_autoshot.shot_spell_ids[spell_id].spell_name
+		elseif type(spell_id) == "string" then
+			spell_name = spell_id
+		end
 	
 	    addon_data.hunter_autoshot.casting = false
         -- If the spell is Auto Shot then reset the shot timer
-        if addon_data.hunter_autoshot.shot_spell_ids[spell_id] then
-            spell_name = addon_data.hunter_autoshot.shot_spell_ids[spell_id].spell_name
+		if spell_name then
 			if spell_name == L["spell.feign_death"] or spell_name == L["spell.trueshot_aura"] then
 				if spell_name == L["spell.feign_death"] then
 					addon_data.hunter_autoshot.FeignStatus = true
@@ -380,14 +411,14 @@ addon_data.hunter_autoshot.OnUnitSpellCastSucceeded = function(unit, spell_id)
 				addon_data.hunter_autoshot.FeignDeath()
 				return
 			end
-			if addon_data.hunter_autoshot.is_spell_aimed_shot(spell_id) then
+			if is_aimed_shot then
 				addon_data.hunter_autoshot.FeignFullReset = false
                 addon_data.hunter_autoshot.last_shot_time = GetTime()
                 addon_data.hunter_autoshot.ResetShotTimer()
 				addon_data.hunter_autoshot.casting_auto = false
 				
 			end
-            if addon_data.hunter_autoshot.is_spell_auto_shot(spell_id) or addon_data.hunter_autoshot.is_spell_shoot(spell_id) then
+			if is_auto_shot or is_shoot then
 				addon_data.hunter_autoshot.FeignFullReset = false
                 addon_data.hunter_autoshot.last_shot_time = GetTime()
                 addon_data.hunter_autoshot.ResetShotTimer()
@@ -395,13 +426,13 @@ addon_data.hunter_autoshot.OnUnitSpellCastSucceeded = function(unit, spell_id)
 			--else 
                 --addon_data.hunter_autoshot.casting_auto = false
             end
-			if addon_data.hunter_autoshot.is_spell_shoot(spell_id) then
+			if is_shoot then
 				new_range_speed, _, _, _, _, _ = UnitRangedDamage("player")
 				addon_data.hunter_autoshot.range_speed = new_range_speed
 			end
         end
 
-		if addon_data.hunter_autoshot.is_spell_auto_shot(spell_id) then	-- Update the ranged attack speed
+		if is_auto_shot then	-- Update the ranged attack speed
 			new_range_speed, _, _, _, _, _ = UnitRangedDamage("player")
 
 			-- Handling for getting haste buffs in combat, don't need to update auto shot cast time until the next shot is ready

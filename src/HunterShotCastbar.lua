@@ -40,28 +40,44 @@ addon_data.hunter_shot_castbar.shot_spell_ids = {
 }
 --- is spell multi-shot defined by spell_id
 addon_data.hunter_shot_castbar.is_spell_multi_shot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.multi_shot"]
+    end
+
     if (spell_id == 2643) or (spell_id == 14288) or (spell_id == 14289) or 
        (spell_id == 14290) or (spell_id == 25294) or (spell_id == 27021) then
-            return true
+             return true
     else
             return false
     end
 end
 --- is spell aimed shot defined by spell_id
 addon_data.hunter_shot_castbar.is_spell_aimed_shot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.aimed_shot"]
+    end
+
     if (spell_id == 19434) or (spell_id == 20900) or (spell_id == 20901) or 
        (spell_id == 20902) or (spell_id == 20903) or (spell_id == 20904) or (spell_id == 27065) then
-            return true
+             return true
     else
             return false
     end
 end
 --- is spell auto shot defined by spell_id
 addon_data.hunter_shot_castbar.is_spell_auto_shot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.auto_shot"]
+    end
+
     return (spell_id == 75)
 end
 --- is spell shoot defined by spell_id
 addon_data.hunter_shot_castbar.is_spell_shoot = function(spell_id)
+    if type(spell_id) == "string" then
+        return spell_id == L["spell.shoot"]
+    end
+
     return (spell_id == 5019)
 end
 --- default settings to be loaded on initial load and reset to default
@@ -256,23 +272,24 @@ end
 addon_data.hunter_shot_castbar.OnUnitSpellCastSucceeded = function(unit, spell_id)
 
 	local settings = character_hunter_shot_castbar_settings
+	local is_aimed_shot = addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id)
+	local is_multi_shot = addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id)
 
   if unit == 'player' then
 	
 	      addon_data.hunter_shot_castbar.casting = false
         
-        if addon_data.hunter_shot_castbar.shot_spell_ids[spell_id] then
-            spell_name = addon_data.hunter_shot_castbar.shot_spell_ids[spell_id].spell_name
+        if addon_data.hunter_shot_castbar.shot_spell_ids[spell_id] or is_aimed_shot or is_multi_shot then
 
-			if addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id) then
+			if is_aimed_shot then
 
 				addon_data.hunter_autoshot.FeignDeath()
 			end
 			addon_data.hunter_shot_castbar.casting_spell_id = 0
             addon_data.hunter_shot_castbar.casting_shot = false
 			-- only show green bar overlay if setting is enabled
-			local spell_aimed_enabled = (addon_data.hunter_shot_castbar.is_spell_aimed_shot(spell_id) and settings.show_aimedshot_cast_bar)
-			local spell_multi_enabled = (addon_data.hunter_shot_castbar.is_spell_multi_shot(spell_id) and settings.show_multishot_cast_bar)
+			local spell_aimed_enabled = (is_aimed_shot and settings.show_aimedshot_cast_bar)
+			local spell_multi_enabled = (is_multi_shot and settings.show_multishot_cast_bar)
 			if (spell_aimed_enabled or spell_multi_enabled) then
 				addon_data.hunter_shot_castbar.frame.spell_bar:SetVertexColor(0, 0.5, 0, 1)
 				addon_data.hunter_shot_castbar.frame.spell_bar:SetWidth(character_hunter_shot_castbar_settings.width)

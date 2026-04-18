@@ -102,6 +102,61 @@ local function GetTrailingBoolean(...)
     return nil
 end
 
+local unit_spell_name_to_id = nil
+
+local function BuildUnitSpellNameToIdLookup()
+    local lookup = {}
+
+    local function AddSpellTable(spell_table)
+        if type(spell_table) ~= "table" then
+            return
+        end
+
+        for spell_id, spell_info in pairs(spell_table) do
+            if (type(spell_id) == "number") and (type(spell_info) == "table") then
+                local spell_name = spell_info.spell_name
+                if type(spell_name) == "string" and (lookup[spell_name] == nil) then
+                    lookup[spell_name] = spell_id
+                end
+            end
+        end
+    end
+
+    AddSpellTable(addon_data.hunter_autoshot and addon_data.hunter_autoshot.shot_spell_ids)
+    AddSpellTable(addon_data.hunter_shot_castbar and addon_data.hunter_shot_castbar.shot_spell_ids)
+
+    return lookup
+end
+
+local function ResolveUnitSpellToken(...)
+    local spell_id = select(3, ...)
+    if type(spell_id) == "number" then
+        return spell_id
+    end
+
+    local second_arg = select(2, ...)
+    if type(second_arg) == "number" then
+        return second_arg
+    end
+
+    local spell_name = nil
+    if type(second_arg) == "string" then
+        spell_name = second_arg
+    elseif type(spell_id) == "string" then
+        spell_name = spell_id
+    end
+
+    if type(spell_name) ~= "string" then
+        return nil
+    end
+
+    if not unit_spell_name_to_id then
+        unit_spell_name_to_id = BuildUnitSpellNameToIdLookup()
+    end
+
+    return unit_spell_name_to_id[spell_name] or spell_name
+end
+
 addon_data.core.NormalizeCombatLogEvent = function(...)
     local first_arg = select(1, ...)
     local event
@@ -991,28 +1046,28 @@ end
 
 function addon_data.core:OnUnitSpellCastSucceeded(event, ...)
     local unit = select(1, ...)
-    local spell_id = select(3, ...)
-    addon_data.hunter_autoshot.OnUnitSpellCastSucceeded(unit, spell_id)
-    addon_data.hunter_shot_castbar.OnUnitSpellCastSucceeded(unit, spell_id)
+    local spell_token = ResolveUnitSpellToken(...)
+    addon_data.hunter_autoshot.OnUnitSpellCastSucceeded(unit, spell_token)
+    addon_data.hunter_shot_castbar.OnUnitSpellCastSucceeded(unit, spell_token)
 end
 
 function addon_data.core:OnUnitSpellCastFailed(event, ...)
     local unit = select(1, ...)
-    local spell_id = select(3, ...)
-    addon_data.hunter_shot_castbar.OnUnitSpellCastFailed(unit, spell_id)
+    local spell_token = ResolveUnitSpellToken(...)
+    addon_data.hunter_shot_castbar.OnUnitSpellCastFailed(unit, spell_token)
 end
 
 function addon_data.core:OnUnitSpellCastInterrupted(event, ...)
     local unit = select(1, ...)
-    local spell_id = select(3, ...)
-    addon_data.hunter_autoshot.OnUnitSpellCastInterrupted(unit, spell_id)
-    addon_data.hunter_shot_castbar.OnUnitSpellCastInterrupted(unit, spell_id)
+    local spell_token = ResolveUnitSpellToken(...)
+    addon_data.hunter_autoshot.OnUnitSpellCastInterrupted(unit, spell_token)
+    addon_data.hunter_shot_castbar.OnUnitSpellCastInterrupted(unit, spell_token)
 end
 
 function addon_data.core:OnUnitSpellCastFailedQuiet(event, ...)
     local unit = select(1, ...)
-    local spell_id = select(3, ...)
-    addon_data.hunter_autoshot.OnUnitSpellCastFailedQuiet(unit, spell_id)
+    local spell_token = ResolveUnitSpellToken(...)
+    addon_data.hunter_autoshot.OnUnitSpellCastFailedQuiet(unit, spell_token)
 end
 
 function addon_data.core:OpenConfig(option)
