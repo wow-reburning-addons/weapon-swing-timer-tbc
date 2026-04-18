@@ -35,7 +35,7 @@ local L = {
 local LOCALE = GetLocale()
 if LOCALE == "deDE" then
 	L["default"] = "Standard"
-	L["intro"] = "Hier kannst du das aktive Datenbankprofile \195\164ndern, damit du verschiedene Einstellungen f\195\188r jeden Charakter erstellen kannst, wodurch eine sehr flexible Konfiguration m\195\182glich wird." 
+	L["intro"] = "Hier kannst du das aktive Datenbankprofile \195\164ndern, damit du verschiedene Einstellungen f\195\188r jeden Charakter erstellen kannst, wodurch eine sehr flexible Konfiguration m\195\182glich wird."
 	L["reset_desc"] = "Setzt das momentane Profil auf Standardwerte zur\195\188ck, f\195\188r den Fall das mit der Konfiguration etwas schief lief oder weil du einfach neu starten willst."
 	L["reset"] = "Profil zur\195\188cksetzen"
 	L["reset_sub"] = "Das aktuelle Profil auf Standard zur\195\188cksetzen."
@@ -73,7 +73,7 @@ elseif LOCALE == "frFR" then
 	L["profiles_sub"] = "Gestion des profils"
 elseif LOCALE == "koKR" then
 	L["default"] = "기본값"
-	L["intro"] = "모든 캐릭터의 다양한 설정과 사용중인 데이터베이스 프로필, 어느것이던지 매우 다루기 쉽게 바꿀수 있습니다." 
+	L["intro"] = "모든 캐릭터의 다양한 설정과 사용중인 데이터베이스 프로필, 어느것이던지 매우 다루기 쉽게 바꿀수 있습니다."
 	L["reset_desc"] = "단순히 다시 새롭게 구성을 원하는 경우, 현재 프로필을 기본값으로 초기화 합니다."
 	L["reset"] = "프로필 초기화"
 	L["reset_sub"] = "현재의 프로필을 기본값으로 초기화 합니다"
@@ -91,10 +91,10 @@ elseif LOCALE == "koKR" then
 	L["profiles"] = "프로필"
 	L["profiles_sub"] = "프로필 설정"
 elseif LOCALE == "esES" then
-	
+
 elseif LOCALE == "zhTW" then
 	L["default"] = "預設"
-	L["intro"] = "你可以選擇一個活動的資料設定檔，這樣你的每個角色就可以擁有不同的設定值，可以給你的插件設定帶來極大的靈活性。" 
+	L["intro"] = "你可以選擇一個活動的資料設定檔，這樣你的每個角色就可以擁有不同的設定值，可以給你的插件設定帶來極大的靈活性。"
 	L["reset_desc"] = "將當前的設定檔恢復到它的預設值，用於你的設定檔損壞，或者你只是想重來的情況。"
 	L["reset"] = "重置設定檔"
 	L["reset_sub"] = "將當前的設定檔恢復為預設值"
@@ -113,7 +113,7 @@ elseif LOCALE == "zhTW" then
 	L["profiles_sub"] = "管理設定檔"
 elseif LOCALE == "zhCN" then
 	L["default"] = "默认"
-	L["intro"] = "你可以选择一个活动的数据配置文件，这样你的每个角色就可以拥有不同的设置值，可以给你的插件配置带来极大的灵活性。" 
+	L["intro"] = "你可以选择一个活动的数据配置文件，这样你的每个角色就可以拥有不同的设置值，可以给你的插件配置带来极大的灵活性。"
 	L["reset_desc"] = "将当前的配置文件恢复到它的默认值，用于你的配置文件损坏，或者你只是想重来的情况。"
 	L["reset"] = "重置配置文件"
 	L["reset_sub"] = "将当前的配置文件恢复为默认值"
@@ -139,7 +139,7 @@ elseif LOCALE == "ruRU" then
 	L["choose_desc"] = "Вы можете создать новый профиль введя название в поле ввода, или выбрать один из уже существующих профилей."
 	L["new"] = "Новый"
 	L["new_sub"] = "Создать новый чистый профиль."
-	L["choose"] = "Профиля"
+	L["choose"] = "Профили"
 	L["choose_sub"] = "Выберите один из уже доступных профилей."
 	L["copy_desc"] = "Скопировать настройки профиля в на данный момент активный профиль."
 	L["copy"] = "Скопировать с"
@@ -147,7 +147,7 @@ elseif LOCALE == "ruRU" then
 	L["delete"] = "Удалить профиль"
 	L["delete_sub"] = "Удаления профиля из БД."
 	L["delete_confirm"] = "Вы уверены что вы хотите удалить выбранный профиль?"
-	L["profiles"] = "Профиля"
+	L["profiles"] = "Профили"
 	L["profiles_sub"] = "Управление профилями"
 end
 
@@ -156,29 +156,29 @@ local tmpprofiles = {}
 
 --[[
 	getProfileList(db, common, nocurrent)
-	
+
 	db - the db object to retrieve the profiles from
 	common (boolean) - if common is true, getProfileList will add the default profiles to the return list, even if they have not been created yet
 	nocurrent (boolean) - if true then getProfileList will not display the current profile in the list
 ]]--
 local function getProfileList(db, common, nocurrent)
 	local profiles = {}
-	
+
 	-- copy existing profiles into the table
 	local currentProfile = db:GetCurrentProfile()
-	for i,v in pairs(db:GetProfiles(tmpprofiles)) do 
-		if not (nocurrent and v == currentProfile) then 
-			profiles[v] = v 
-		end 
+	for i,v in pairs(db:GetProfiles(tmpprofiles)) do
+		if not (nocurrent and v == currentProfile) then
+			profiles[v] = v
+		end
 	end
-	
+
 	-- add our default profiles to choose from ( or rename existing profiles)
 	for k,v in pairs(defaultProfiles) do
 		if (common or profiles[k]) and not (nocurrent and k == currentProfile) then
 			profiles[k] = v
 		end
 	end
-	
+
 	return profiles
 end
 
@@ -203,11 +203,11 @@ function OptionsHandlerPrototype:GetCurrentProfile()
 	return self.db:GetCurrentProfile()
 end
 
---[[ 
+--[[
 	List all active profiles
 	you can control the output with the .arg variable
 	currently four modes are supported
-	
+
 	(empty) - return all available profiles
 	"nocurrent" - returns all available profiles except the currently active profile
 	"common" - returns all avaialble profiles + some commonly used profiles ("char - realm", "realm", "class", "Default")
@@ -225,7 +225,7 @@ function OptionsHandlerPrototype:ListProfiles(info)
 	else
 		profiles = getProfileList(self.db)
 	end
-	
+
 	return profiles
 end
 
@@ -254,19 +254,19 @@ local function getOptionsHandler(db, noDefaultProfiles)
 	if not defaultProfiles then
 		generateDefaultProfiles(db)
 	end
-	
+
 	local handler = AceDBOptions.handlers[db] or { db = db, noDefaultProfiles = noDefaultProfiles }
-	
+
 	for k,v in pairs(OptionsHandlerPrototype) do
 		handler[k] = v
 	end
-	
+
 	AceDBOptions.handlers[db] = handler
 	return handler
 end
 
 --[[
-	the real options table 
+	the real options table
 ]]
 local optionsTable = {
 	desc = {
@@ -346,7 +346,7 @@ local optionsTable = {
 --[[
 	GetOptionsTable(db)
 	db - the database object to create the options table for
-	
+
 	creates and returns a option table to be used in your addon
 ]]
 function AceDBOptions:GetOptionsTable(db, noDefaultProfiles)
@@ -355,7 +355,7 @@ function AceDBOptions:GetOptionsTable(db, noDefaultProfiles)
 			name = L["profiles"],
 			desc = L["profiles_sub"],
 		}
-	
+
 	tbl.handler = getOptionsHandler(db, noDefaultProfiles)
 	tbl.args = optionsTable
 
