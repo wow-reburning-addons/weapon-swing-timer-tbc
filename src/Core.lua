@@ -18,6 +18,7 @@ local L = addon_data.localization_table
 local unpack_fn = unpack or table.unpack
 
 local AceAddon = LibStub("AceAddon-3.0")
+local AceDB = LibStub("AceDB-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 addon_data.core = AceAddon:NewAddon(addon_name, "AceEvent-3.0", "AceConsole-3.0")
 
@@ -34,6 +35,56 @@ addon_data.core.default_settings = {
     one_frame = false,
 	welcome_message = true
 }
+
+local function CopyTable(source)
+    local copy = {}
+    if not source then
+        return copy
+    end
+
+    for key, value in pairs(source) do
+        if type(value) == "table" then
+            copy[key] = CopyTable(value)
+        else
+            copy[key] = value
+        end
+    end
+
+    return copy
+end
+
+local function BuildAceDBDefaults()
+    local _, player_class = UnitClass("player")
+    local ranged_enabled = (player_class == "HUNTER") or (player_class == "MAGE") or (player_class == "PRIEST") or (player_class == "WARLOCK")
+
+    local hunter_defaults = CopyTable(addon_data.hunter and addon_data.hunter.default_settings)
+    local castbar_defaults = CopyTable(addon_data.castbar and addon_data.castbar.default_settings)
+    hunter_defaults.enabled = ranged_enabled
+    castbar_defaults.enabled = ranged_enabled
+
+    return {
+        char = {
+            core = CopyTable(addon_data.core.default_settings),
+            player = CopyTable(addon_data.player and addon_data.player.default_settings),
+            target = CopyTable(addon_data.target and addon_data.target.default_settings),
+            hunter = hunter_defaults,
+            castbar = castbar_defaults,
+        },
+    }
+end
+
+local function BindSettingsFromDB()
+    local db_char = addon_data.core.db and addon_data.core.db.char
+    if not db_char then
+        return
+    end
+
+    character_core_settings = db_char.core
+    character_player_settings = db_char.player
+    character_target_settings = db_char.target
+    character_hunter_settings = db_char.hunter
+    character_castbar_settings = db_char.castbar
+end
 
 addon_data.core.in_combat = false
 
@@ -616,11 +667,12 @@ local function LoadAllSettings()
 end
 
 addon_data.core.RestoreAllDefaults = function()
-    addon_data.core.RestoreDefaults()
-    addon_data.player.RestoreDefaults()
-    addon_data.target.RestoreDefaults()
-    addon_data.hunter.RestoreDefaults()
-	addon_data.castbar.RestoreDefaults()
+    if addon_data.core.db then
+        addon_data.core.db:ResetDB()
+        BindSettingsFromDB()
+        LoadAllSettings()
+        addon_data.core.UpdateAllVisualsOnSettingsChange()
+    end
 end
 
 local function InitializeAllVisuals()
@@ -640,22 +692,11 @@ addon_data.core.UpdateAllVisualsOnSettingsChange = function()
 end
 
 addon_data.core.LoadSettings = function()
-    -- If the carried over settings dont exist then make them
-    if not character_core_settings then
-        character_core_settings = {}
-    end
-    -- If the carried over settings aren't set then set them to the defaults
-    for setting, value in pairs(addon_data.core.default_settings) do
-        if character_core_settings[setting] == nil then
-            character_core_settings[setting] = value
-        end
-    end
+    BindSettingsFromDB()
 end
 
 addon_data.core.RestoreDefaults = function()
-    for setting, value in pairs(addon_data.core.default_settings) do
-        character_core_settings[setting] = value
-    end
+    addon_data.core.RestoreAllDefaults()
 end
 
 local function CoreFrame_OnUpdate(self, elapsed)
@@ -843,6 +884,8 @@ addon_data.core.RunSelfTest = function()
 end
 
 function addon_data.core:OnInitialize()
+    self.db = AceDB:New("WeaponSwingTimerDB", BuildAceDBDefaults())
+    BindSettingsFromDB()
     LoadAllSettings()
     self:RegisterChatCommand("wst", "OpenConfig")
     self:RegisterChatCommand("weaponswingtimer", "OpenConfig")
