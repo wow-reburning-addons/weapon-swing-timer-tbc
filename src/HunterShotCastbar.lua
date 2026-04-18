@@ -408,7 +408,7 @@ addon_data.hunter_shot_castbar.UpdateVisualsOnUpdate = function()
 		frame.spell_bar:SetVertexColor(0.2, 0.2, 0.2, 1)
 		frame:SetSize(settings.width, settings.height)
         if not (settings.is_locked) then
-			frame.spell_text_center:SetText(L["cast.spell_bar_unlocked"])
+			frame.spell_text_center:SetText(L["cast.spell_shot_bar_unlocked"])
 			frame:SetAlpha(1)
 		else
 			frame:SetAlpha(0)
