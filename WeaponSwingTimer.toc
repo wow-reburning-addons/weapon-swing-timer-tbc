@@ -25,7 +25,7 @@
 ## Version: 6.5.2
 ## DefaultState: enabled
 ## OptionalDeps: ColorPickerPlus
-## SavedVariablesPerCharacter: WeaponSwingTimerDB
+## SavedVariables: WeaponSwingTimerDB
 
 libs\LibStub\LibStub.lua
 libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
@@ -36,6 +36,7 @@ libs\AceLocale-3.0\AceLocale-3.0.lua
 libs\AceGUI-3.0\AceGUI-3.0.xml
 libs\AceConfig-3.0\AceConfig-3.0.xml
 libs\AceDB-3.0\AceDB-3.0.lua
+libs\AceDBOptions-3.0\AceDBOptions-3.0.lua
 
 Locales\init.lua
 Locales\enUS.lua

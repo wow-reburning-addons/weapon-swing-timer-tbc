@@ -68,7 +68,7 @@ addon_data.player.off_speed_changed = false
 
 addon_data.player.LoadSettings = function()
     if not character_player_settings and addon_data.core and addon_data.core.db then
-        character_player_settings = addon_data.core.db.char.player
+        character_player_settings = addon_data.core.db.profile.player
     end
     -- Update settings that dont change unless the interface is reloaded
     addon_data.player.class = addon_data.utils.GetClassToken("player")
@@ -438,7 +438,10 @@ addon_data.player.OnFrameDragStop = function()
 end
 
 addon_data.player.InitializeVisuals = function()
-    local settings = character_player_settings
+    local settings = character_player_settings or addon_data.player.default_settings
+    if not settings.fontsize then
+        settings.fontsize = addon_data.player.default_settings.fontsize
+    end
     -- Create the frame
     addon_data.player.frame = CreateFrame("Frame", addon_name .. "PlayerFrame", UIParent)
     local frame = addon_data.player.frame

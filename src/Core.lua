@@ -63,7 +63,7 @@ local function BuildAceDBDefaults()
     castbar_defaults.enabled = ranged_enabled
 
     return {
-        char = {
+        profile = {
             core = CopyTable(addon_data.core.default_settings),
             player = CopyTable(addon_data.player and addon_data.player.default_settings),
             target = CopyTable(addon_data.target and addon_data.target.default_settings),
@@ -74,16 +74,16 @@ local function BuildAceDBDefaults()
 end
 
 local function BindSettingsFromDB()
-    local db_char = addon_data.core.db and addon_data.core.db.char
-    if not db_char then
+    local db_profile = addon_data.core.db and addon_data.core.db.profile
+    if not db_profile then
         return
     end
 
-    character_core_settings = db_char.core
-    character_player_settings = db_char.player
-    character_target_settings = db_char.target
-    character_hunter_autoshot_settings = db_char.hunter_autoshot
-    character_hunter_shot_castbar_settings = db_char.hunter_shot_castbar
+    character_core_settings = db_profile.core
+    character_player_settings = db_profile.player
+    character_target_settings = db_profile.target
+    character_hunter_autoshot_settings = db_profile.hunter_autoshot
+    character_hunter_shot_castbar_settings = db_profile.hunter_shot_castbar
 end
 
 addon_data.core.in_combat = false
@@ -723,7 +723,7 @@ end
 
 addon_data.core.RestoreAllDefaults = function()
     if addon_data.core.db then
-        addon_data.core.db:ResetDB()
+        addon_data.core.db:ResetProfile()
         BindSettingsFromDB()
         addon_data.core.UpdateAllVisualsOnSettingsChange()
     end
@@ -939,10 +939,25 @@ end
 
 function addon_data.core:OnInitialize()
     self.db = AceDB:New("WeaponSwingTimerDB", BuildAceDBDefaults())
+    self.db:RegisterCallback("OnProfileChanged", function()
+        self:OnProfileUpdated()
+    end)
+    self.db:RegisterCallback("OnProfileCopied", function()
+        self:OnProfileUpdated()
+    end)
+    self.db:RegisterCallback("OnProfileReset", function()
+        self:OnProfileUpdated()
+    end)
     BindSettingsFromDB()
     LoadAllSettings()
     self:RegisterChatCommand("wst", "OpenConfig")
     self:RegisterChatCommand("weaponswingtimer", "OpenConfig")
+end
+
+function addon_data.core:OnProfileUpdated()
+    BindSettingsFromDB()
+    LoadAllSettings()
+    addon_data.core.UpdateAllVisualsOnSettingsChange()
 end
 
 function addon_data.core:OnEnable()

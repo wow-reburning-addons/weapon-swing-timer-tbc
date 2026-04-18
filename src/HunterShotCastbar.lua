@@ -179,7 +179,7 @@ end
 
 addon_data.hunter_shot_castbar.LoadSettings = function()
     if not character_hunter_shot_castbar_settings and addon_data.core and addon_data.core.db then
-        character_hunter_shot_castbar_settings = addon_data.core.db.char.hunter_shot_castbar
+        character_hunter_shot_castbar_settings = addon_data.core.db.profile.hunter_shot_castbar
     end
 
     addon_data.hunter_shot_castbar.scan_tip = CreateFrame("GameTooltip", "WSTScanTip", nil, "GameTooltipTemplate")
@@ -497,7 +497,10 @@ addon_data.hunter_shot_castbar.OnFrameDragStop = function()
 end
 
 addon_data.hunter_shot_castbar.InitializeVisuals = function()
-    local settings = character_hunter_shot_castbar_settings
+    local settings = character_hunter_shot_castbar_settings or addon_data.hunter_shot_castbar.default_settings
+    if not settings.fontsize then
+        settings.fontsize = addon_data.hunter_shot_castbar.default_settings.fontsize
+    end
     -- Create the frame
     addon_data.hunter_shot_castbar.frame = CreateFrame("Frame", addon_name .. "HunterCastbarFrame", UIParent)
     local frame = addon_data.hunter_shot_castbar.frame

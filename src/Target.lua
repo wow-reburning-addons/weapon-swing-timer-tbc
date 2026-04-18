@@ -65,7 +65,7 @@ addon_data.target.off_speed_changed = false
 
 addon_data.target.LoadSettings = function()
     if not character_target_settings and addon_data.core and addon_data.core.db then
-        character_target_settings = addon_data.core.db.char.target
+        character_target_settings = addon_data.core.db.profile.target
     end
 end
 
@@ -441,7 +441,10 @@ addon_data.target.OnFrameDragStop = function()
 end
 
 addon_data.target.InitializeVisuals = function()
-    local settings = character_target_settings
+    local settings = character_target_settings or addon_data.target.default_settings
+    if not settings.fontsize then
+        settings.fontsize = addon_data.target.default_settings.fontsize
+    end
     -- Create the frame
     addon_data.target.frame = CreateFrame("Frame", addon_name .. "TargetFrame", UIParent)
     local frame = addon_data.target.frame

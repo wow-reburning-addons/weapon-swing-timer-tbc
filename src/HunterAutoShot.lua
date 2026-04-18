@@ -160,7 +160,7 @@ end
 
 addon_data.hunter_autoshot.LoadSettings = function()
     if not character_hunter_autoshot_settings and addon_data.core and addon_data.core.db then
-        character_hunter_autoshot_settings = addon_data.core.db.char.hunter_autoshot
+        character_hunter_autoshot_settings = addon_data.core.db.profile.hunter_autoshot
     end
 
     addon_data.hunter_autoshot.scan_tip = CreateFrame("GameTooltip", "WSTScanTip", nil, "GameTooltipTemplate")
@@ -307,7 +307,7 @@ addon_data.hunter_autoshot.UpdateAutoShotTimer = function(elapsed)
 end
 
 addon_data.hunter_autoshot.OnUpdate = function(elapsed)
-    if character_hunter_autoshot_settings.enabled then
+    if character_hunter_autoshot_settings and character_hunter_autoshot_settings.enabled then
         -- Check to see if we have moved
         addon_data.hunter_autoshot.has_moved = (GetPlayerMovementSpeed() > 0)
 		
@@ -636,7 +636,10 @@ addon_data.hunter_autoshot.OnFrameDragStop = function()
 end
 
 addon_data.hunter_autoshot.InitializeVisuals = function()
-    local settings = character_hunter_autoshot_settings
+    local settings = character_hunter_autoshot_settings or addon_data.hunter_autoshot.default_settings
+    if not settings.fontsize then
+        settings.fontsize = addon_data.hunter_autoshot.default_settings.fontsize
+    end
     -- Create the frame
     addon_data.hunter_autoshot.frame = CreateFrame("Frame", addon_name .. "HunterAutoshotFrame", UIParent)
     local frame = addon_data.hunter_autoshot.frame
