@@ -110,6 +110,7 @@ addon_data.hunter.casting_auto = false
 addon_data.hunter.range_cast_speed_modifer = 1
 
 addon_data.hunter.range_weapon_id = 0
+addon_data.hunter.range_weapon_link = GetInventoryItemLink("player", 18)
 addon_data.hunter.has_moved = false
 
 -- handling of stopping auto timer from starting
@@ -158,16 +159,28 @@ addon_data.hunter.RestoreDefaults = function()
 end
 
 -- Replaced update info with this instead, checking weapon id every time inventory is changed for simplicity
-addon_data.hunter.OnInventoryChange = function()
+addon_data.hunter.OnInventoryChange = function(force_reset)
 	local _, class, _ = UnitClass("player")
 	if (class == "HUNTER" or class == "MAGE" or class == "PRIEST" or class == "WARLOCK") then
-		addon_data.hunter.range_weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 18)
-		local weapon_id = addon_data.hunter.range_weapon_id
-	
+		local weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 18)
+		local weapon_link = GetInventoryItemLink("player", 18)
+		local weapon_changed = force_reset or (weapon_id ~= addon_data.hunter.range_weapon_id) or (weapon_link ~= addon_data.hunter.range_weapon_link)
+
+		addon_data.hunter.range_weapon_id = weapon_id
+		addon_data.hunter.range_weapon_link = weapon_link
+
 		if weapon_id == nil then
 			addon_data.hunter.base_speed = 1
-		else
+		elseif addon_data.ranged_DB.item_ids[weapon_id] and addon_data.ranged_DB.item_ids[weapon_id].base_speed then
 			addon_data.hunter.base_speed = addon_data.ranged_DB.item_ids[weapon_id].base_speed
+		else
+			addon_data.hunter.base_speed = 1
+		end
+
+		if weapon_changed then
+			addon_data.hunter.FeignFullReset = false
+			addon_data.hunter.UpdateRangeCastSpeedModifier()
+			addon_data.hunter.ResetShotTimer()
 		end
 	end
 end	
@@ -177,7 +190,11 @@ addon_data.hunter.FeignDeath = function()
     addon_data.hunter.last_shot_time = GetTime()
 	if not addon_data.hunter.FeignFullReset then
 		local weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 18)
-		addon_data.hunter.range_speed = addon_data.ranged_DB.item_ids[weapon_id].base_speed + 0.15
+		if weapon_id and addon_data.ranged_DB.item_ids[weapon_id] and addon_data.ranged_DB.item_ids[weapon_id].base_speed then
+			addon_data.hunter.range_speed = addon_data.ranged_DB.item_ids[weapon_id].base_speed + 0.15
+		else
+			addon_data.hunter.range_speed = 1.15
+		end
 		addon_data.hunter.FeignFullReset = true
 	end
     addon_data.hunter.ResetShotTimer()
@@ -193,8 +210,10 @@ addon_data.hunter.UpdateRangeCastSpeedModifier = function()
 		-- added case for if no ranged equipped
 		if weapon_id == nil then
 			addon_data.hunter.base_speed = 1
-		else
+		elseif addon_data.ranged_DB.item_ids[weapon_id] and addon_data.ranged_DB.item_ids[weapon_id].base_speed then
 			addon_data.hunter.base_speed = addon_data.ranged_DB.item_ids[weapon_id].base_speed
+		else
+			addon_data.hunter.base_speed = 1
 		end
 	else
 		range_speed, _, _, _, _, _ = UnitRangedDamage("player")

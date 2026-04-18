@@ -54,6 +54,7 @@ addon_data.player.main_swing_timer = 0.00001
 addon_data.player.prev_main_weapon_speed = 2
 addon_data.player.main_weapon_speed = 2
 addon_data.player.main_weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 16)
+addon_data.player.main_weapon_link = GetInventoryItemLink("player", 16)
 addon_data.player.main_speed_changed = false
 addon_data.player.extra_attacks_flag = false
 
@@ -61,6 +62,7 @@ addon_data.player.off_swing_timer = 0.00001
 addon_data.player.prev_off_weapon_speed = 2
 addon_data.player.off_weapon_speed = 2
 addon_data.player.off_weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 17)
+addon_data.player.off_weapon_link = GetInventoryItemLink("player", 17)
 addon_data.player.has_offhand = false
 addon_data.player.off_speed_changed = false
 
@@ -126,21 +128,25 @@ addon_data.player.OnUpdate = function(elapsed)
     end
 end
 
-addon_data.player.OnInventoryChange = function()
+addon_data.player.OnInventoryChange = function(force_reset)
     local new_main_guid = addon_data.utils.GetInventoryItemIDCompat("player", 16)
     local new_off_guid = addon_data.utils.GetInventoryItemIDCompat("player", 17)
+    local new_main_link = GetInventoryItemLink("player", 16)
+    local new_off_link = GetInventoryItemLink("player", 17)
     -- Check for a main hand weapon change
-    if addon_data.player.main_weapon_id ~= new_main_guid then
+    if force_reset or (addon_data.player.main_weapon_id ~= new_main_guid) or (addon_data.player.main_weapon_link ~= new_main_link) then
         addon_data.player.UpdateMainWeaponSpeed()
         addon_data.player.ResetMainSwingTimer()
     end
     addon_data.player.main_weapon_id = new_main_guid
+    addon_data.player.main_weapon_link = new_main_link
     -- Check for an off hand weapon change
-    if addon_data.player.off_weapon_id ~= new_off_guid then
+    if force_reset or (addon_data.player.off_weapon_id ~= new_off_guid) or (addon_data.player.off_weapon_link ~= new_off_link) then
         addon_data.player.UpdateOffWeaponSpeed()
         addon_data.player.ResetOffSwingTimer()
     end
     addon_data.player.off_weapon_id = new_off_guid
+    addon_data.player.off_weapon_link = new_off_link
 end
 
 addon_data.player.OnCombatLogUnfiltered = function(combat_info)
