@@ -24,6 +24,7 @@ addon_data.player = {}
 
 addon_data.player.default_settings = {
 	enabled = true,
+    display_condition = "in_melee",
 	width = 300,
 	height = 12,
 	fontsize = 10,
@@ -70,6 +71,11 @@ addon_data.player.LoadSettings = function()
     if not character_player_settings and addon_data.core and addon_data.core.db then
         character_player_settings = addon_data.core.db.profile.player
     end
+
+    if character_player_settings and character_player_settings.display_condition == nil then
+        character_player_settings.display_condition = addon_data.player.default_settings.display_condition
+    end
+
     -- Update settings that dont change unless the interface is reloaded
     addon_data.player.class = addon_data.utils.GetClassToken("player")
     addon_data.player.guid = UnitGUID("player")
@@ -247,6 +253,16 @@ addon_data.player.UpdateVisualsOnUpdate = function()
     if not frame or not frame.main_bar then
         return
     end
+    local should_show = addon_data.player.ShouldShowBar()
+    if not should_show then
+        frame:Hide()
+        return
+    end
+
+    if not frame:IsShown() then
+        frame:Show()
+    end
+
     if settings.enabled then
         local main_speed = addon_data.player.main_weapon_speed
         local main_timer = addon_data.player.main_swing_timer
@@ -327,7 +343,6 @@ addon_data.player.UpdateVisualsOnSettingsChange = function()
     local frame = addon_data.player.frame
     local settings = character_player_settings
     if settings.enabled then
-        frame:Show()
         frame:ClearAllPoints()
         frame:SetPoint(settings.point, UIParent, settings.rel_point, settings.x_offset, settings.y_offset)
         frame:SetWidth(settings.width)
@@ -411,9 +426,43 @@ addon_data.player.UpdateVisualsOnSettingsChange = function()
             frame.off_left_text:Hide()
             frame.off_right_text:Hide()
         end
+
+        if addon_data.player.ShouldShowBar() then
+            frame:Show()
+        else
+            frame:Hide()
+        end
     else
         frame:Hide()
     end
+end
+
+addon_data.player.ShouldShowBar = function()
+    local settings = character_player_settings
+    if not settings or not settings.enabled then
+        return false
+    end
+
+    local attack_mode = "none"
+    if addon_data.core and addon_data.core.GetActiveAttackMode then
+        attack_mode = addon_data.core.GetActiveAttackMode()
+    end
+
+    if attack_mode == "ranged" then
+        return false
+    end
+
+    if not addon_data.utils.ShouldShowByDistanceCondition(settings.display_condition, attack_mode, false) then
+        return false
+    end
+
+    if addon_data.hunter_autoshot and addon_data.hunter_autoshot.ShouldReplacePlayerMainhandBar then
+        if addon_data.hunter_autoshot.ShouldReplacePlayerMainhandBar() then
+            return false
+        end
+    end
+
+    return true
 end
 
 addon_data.player.OnFrameDragStart = function()
@@ -488,5 +537,9 @@ addon_data.player.InitializeVisuals = function()
     -- Show it off
     addon_data.player.UpdateVisualsOnSettingsChange()
     addon_data.player.UpdateVisualsOnUpdate()
-    frame:Show()
+    if addon_data.player.ShouldShowBar() then
+        frame:Show()
+    else
+        frame:Hide()
+    end
 end

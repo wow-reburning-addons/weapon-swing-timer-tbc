@@ -1,4 +1,4 @@
-local addon_name = "WeaponSwingTimer"
+local addon_name = "WeaponSwingTimer TBC 2.4.3"
 local addon_data = _G.WeaponSwingTimer_AddonData
 if not addon_data then
     addon_data = {}
@@ -71,6 +71,11 @@ L["config.hunter.multishot_clip_bar.desc"] = "Shows a bar that represents when a
 L["config.hunter.autoshot_delay_timer.label"] = " Auto Shot delay timer"
 L["config.hunter.autoshot_delay_timer.desc"] = "Shows a timer that represents when Auto shot is delayed."
 L["config.hunter.multishot_clip_color.label"] = "Multi-Shot Clip Color"
+L["config.hunter.placement_mode.label"] = " Placement Mode"
+L["config.hunter.placement_mode.desc"] = "Controls where the shot bar is drawn relative to the player's main-hand bar."
+L["config.hunter.placement_mode.independent"] = "Independent"
+L["config.hunter.placement_mode.overlay_mainhand"] = "Overlay Main-Hand"
+L["config.hunter.placement_mode.replace_mainhand"] = "Replace Main-Hand"
 L["config.hunter.bar_explanation.label"] = "Bar Explanation"
 
 L["config.spell_shot_bar.show_cast_text.label"] = " Show Cast Text"
@@ -88,6 +93,11 @@ L["config.common.show_border.label"] = " Show border"
 L["config.common.classic_bars.label"] = " Classic bars"
 L["config.common.fill_empty.label"] = " Fill / Empty"
 L["config.common.fill_empty.desc"] = "Determines if the bar is full or empty when a swing is ready."
+L["config.common.display_condition.label"] = " Display Condition"
+L["config.common.display_condition.desc"] = "Controls when this bar should be shown based on melee distance to your hostile target."
+L["config.common.display_condition.always"] = "Always"
+L["config.common.display_condition.in_melee"] = "Only In Melee"
+L["config.common.display_condition.out_of_melee"] = "Only Out Of Melee"
 L["config.common.show_left_text.label"] = " Show Left Text"
 L["config.common.show_right_text.label"] = " Show Right Text"
 L["config.common.bar_width.label"] = "Bar Width"

@@ -138,7 +138,65 @@ local function MakeColor(scope_key, r_key, g_key, b_key, a_key, text_key)
     }
 end
 
+local function MakeSelect(scope_key, setting_key, text_key, desc_key, values, fallback_value, normalize_value_fn)
+    return {
+        type = "select",
+        name = L[text_key],
+        desc = desc_key and L[desc_key] or nil,
+        values = values,
+        get = function()
+            local settings_table = GetSettingsTable(scope_key)
+            if not settings_table then
+                return fallback_value
+            end
+
+            local value = settings_table[setting_key]
+            if value == nil then
+                return fallback_value
+            end
+
+            if normalize_value_fn then
+                value = normalize_value_fn(value)
+            end
+
+            if value == nil or values[value] == nil then
+                return fallback_value
+            end
+
+            return value
+        end,
+        set = function(_, value)
+            local settings_table = GetSettingsTable(scope_key)
+            if not settings_table then
+                return
+            end
+
+            if normalize_value_fn then
+                value = normalize_value_fn(value)
+            end
+
+            if value == nil then
+                value = fallback_value
+            end
+
+            settings_table[setting_key] = value
+            RefreshAllVisuals()
+        end,
+    }
+end
+
 local function BuildOptionsTable()
+    local display_condition_values = {
+        always = L["config.common.display_condition.always"],
+        in_melee = L["config.common.display_condition.in_melee"],
+        out_of_melee = L["config.common.display_condition.out_of_melee"],
+    }
+    local placement_mode_values = {
+        independent = L["config.hunter.placement_mode.independent"],
+        overlay_mainhand = L["config.hunter.placement_mode.overlay_mainhand"],
+        replace_mainhand = L["config.hunter.placement_mode.replace_mainhand"],
+    }
+
     local options = {
         type = "group",
         name = addon_name,
@@ -191,6 +249,7 @@ local function BuildOptionsTable()
                 order = 2,
                 args = {
                     enabled = MakeToggle("player", "enabled", "config.common.enable.label", "config.player.enable.desc"),
+                    display_condition = MakeSelect("player", "display_condition", "config.common.display_condition.label", "config.common.display_condition.desc", display_condition_values, "in_melee", addon_data.utils.NormalizeDisplayCondition),
                     show_offhand = MakeToggle("player", "show_offhand", "config.common.show_offhand.label", "config.player.show_offhand.desc"),
                     show_border = MakeToggle("player", "show_border", "config.common.show_border.label", "config.player.show_border.desc"),
                     classic_bars = MakeToggle("player", "classic_bars", "config.common.classic_bars.label", "config.player.classic_bars.desc"),
@@ -243,6 +302,8 @@ local function BuildOptionsTable()
                 order = 4,
                 args = {
                     enabled = MakeToggle("hunter_autoshot", "enabled", "config.common.enable.label", nil),
+                    display_condition = MakeSelect("hunter_autoshot", "display_condition", "config.common.display_condition.label", "config.common.display_condition.desc", display_condition_values, "out_of_melee", addon_data.utils.NormalizeDisplayCondition),
+                    placement_mode = MakeSelect("hunter_autoshot", "placement_mode", "config.hunter.placement_mode.label", "config.hunter.placement_mode.desc", placement_mode_values, "independent", addon_data.hunter_autoshot.NormalizePlacementMode),
                     one_bar = MakeToggle("hunter_autoshot", "one_bar", "config.hunter.one_bar.label", "config.hunter.one_bar.desc"),
                     show_multishot_clip_bar = MakeToggle("hunter_autoshot", "show_multishot_clip_bar", "config.hunter.multishot_clip_bar.label", "config.hunter.multishot_clip_bar.desc"),
                     show_autoshot_delay_timer = MakeToggle("hunter_autoshot", "show_autoshot_delay_timer", "config.hunter.autoshot_delay_timer.label", "config.hunter.autoshot_delay_timer.desc"),

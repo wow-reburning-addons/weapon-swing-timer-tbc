@@ -87,6 +87,41 @@ local function BindSettingsFromDB()
 end
 
 addon_data.core.in_combat = false
+addon_data.core.attack_mode = "none"
+addon_data.core.last_melee_event_time = 0
+addon_data.core.last_ranged_event_time = 0
+
+addon_data.core.GetActiveAttackMode = function()
+    local current_mode = addon_data.core.attack_mode
+    if (current_mode == "none") or (current_mode == "melee") or (current_mode == "ranged") then
+        return current_mode
+    end
+
+    return "none"
+end
+
+addon_data.core.SetAttackMode = function(new_mode, event_time)
+    if (new_mode ~= "none") and (new_mode ~= "melee") and (new_mode ~= "ranged") then
+        return
+    end
+
+    local timestamp = event_time
+    if type(timestamp) ~= "number" then
+        timestamp = GetTime()
+    end
+
+    if new_mode == "melee" then
+        addon_data.core.last_melee_event_time = timestamp
+    elseif new_mode == "ranged" then
+        addon_data.core.last_ranged_event_time = timestamp
+    end
+
+    local old_mode = addon_data.core.attack_mode
+    addon_data.core.attack_mode = new_mode
+    if old_mode ~= new_mode and addon_data.core.UpdateAllVisualsOnSettingsChange then
+        addon_data.core.UpdateAllVisualsOnSettingsChange()
+    end
+end
 
 local function GetTrailingBoolean(...)
     local arg_count = select("#", ...)
@@ -990,6 +1025,7 @@ end
 
 function addon_data.core:OnPlayerRegenEnabled()
     addon_data.core.in_combat = false
+    addon_data.core.SetAttackMode("none")
 end
 
 function addon_data.core:OnPlayerRegenDisabled()
@@ -998,12 +1034,14 @@ end
 
 function addon_data.core:OnPlayerEnteringWorld()
     addon_data.core.in_combat = UnitAffectingCombat("player") and true or false
+    addon_data.core.SetAttackMode("none")
     addon_data.player.OnInventoryChange(true)
     addon_data.hunter_autoshot.OnInventoryChange(true)
     addon_data.target.OnPlayerTargetChanged()
 end
 
 function addon_data.core:OnPlayerTargetChanged()
+    addon_data.core.SetAttackMode("none")
     addon_data.target.OnPlayerTargetChanged()
 end
 
@@ -1019,6 +1057,16 @@ function addon_data.core:OnCombatLogEvent(event, ...)
 
     if not combat_info then
         return
+    end
+
+    if combat_info.source_guid == UnitGUID("player") then
+        if (combat_info.event == "RANGE_DAMAGE") or (combat_info.event == "RANGE_MISSED") then
+            if addon_data.hunter_autoshot.is_spell_auto_shot(combat_info.spell_id) or addon_data.hunter_autoshot.is_spell_shoot(combat_info.spell_id) then
+                addon_data.core.SetAttackMode("ranged")
+            end
+        elseif (combat_info.event == "SWING_DAMAGE") or (combat_info.event == "SWING_MISSED") then
+            addon_data.core.SetAttackMode("melee")
+        end
     end
 
     addon_data.player.OnCombatLogUnfiltered(combat_info)
@@ -1052,10 +1100,12 @@ function addon_data.core:OnPlayerEquipmentChanged(event, ...)
 end
 
 function addon_data.core:OnStartAutorepeatSpell()
+    addon_data.core.SetAttackMode("ranged")
     addon_data.hunter_autoshot.OnStartAutorepeatSpell()
 end
 
 function addon_data.core:OnStopAutorepeatSpell()
+    addon_data.core.SetAttackMode("none")
     addon_data.hunter_autoshot.OnStopAutorepeatSpell()
 end
 

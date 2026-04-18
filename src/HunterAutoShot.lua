@@ -97,6 +97,8 @@ end
 --- default settings to be loaded on initial load and reset to default
 addon_data.hunter_autoshot.default_settings = {
 	enabled = true,
+    display_condition = "out_of_melee",
+    placement_mode = "independent",
 	width = 300,
 	height = 12,
 	fontsize = 12,
@@ -161,6 +163,16 @@ end
 addon_data.hunter_autoshot.LoadSettings = function()
     if not character_hunter_autoshot_settings and addon_data.core and addon_data.core.db then
         character_hunter_autoshot_settings = addon_data.core.db.profile.hunter_autoshot
+    end
+
+    if character_hunter_autoshot_settings then
+        if character_hunter_autoshot_settings.display_condition == nil then
+            character_hunter_autoshot_settings.display_condition = addon_data.hunter_autoshot.default_settings.display_condition
+        end
+
+        if character_hunter_autoshot_settings.placement_mode == nil then
+            character_hunter_autoshot_settings.placement_mode = addon_data.hunter_autoshot.default_settings.placement_mode
+        end
     end
 
     addon_data.hunter_autoshot.scan_tip = CreateFrame("GameTooltip", "WSTScanTip", nil, "GameTooltipTemplate")
@@ -475,6 +487,78 @@ addon_data.hunter_autoshot.OnUnitSpellCastFailedQuiet = function(unit, spell_id)
     end
 end
 
+addon_data.hunter_autoshot.UsesPlayerMainhandAnchor = function()
+    local settings = character_hunter_autoshot_settings
+    if not settings then
+        return false
+    end
+
+    local placement_mode = addon_data.hunter_autoshot.NormalizePlacementMode(settings.placement_mode)
+    return (placement_mode == "overlay_mainhand") or (placement_mode == "replace_mainhand")
+end
+
+addon_data.hunter_autoshot.NormalizePlacementMode = function(placement_mode)
+    if placement_mode == "independent" or placement_mode == 1 then
+        return "independent"
+    end
+
+    if placement_mode == "overlay_mainhand" or placement_mode == 2 then
+        return "overlay_mainhand"
+    end
+
+    if placement_mode == "replace_mainhand" or placement_mode == 3 then
+        return "replace_mainhand"
+    end
+
+    return "independent"
+end
+
+addon_data.hunter_autoshot.GetVisualDimensions = function()
+    local settings = character_hunter_autoshot_settings or addon_data.hunter_autoshot.default_settings
+    if addon_data.hunter_autoshot.UsesPlayerMainhandAnchor() and character_player_settings then
+        local player_fontsize = character_player_settings.fontsize or settings.fontsize
+        return character_player_settings.width, character_player_settings.height, player_fontsize
+    end
+
+    return settings.width, settings.height, settings.fontsize
+end
+
+addon_data.hunter_autoshot.ShouldShowBar = function()
+    local settings = character_hunter_autoshot_settings
+    if not settings or not settings.enabled then
+        return false
+    end
+
+    local attack_mode = "none"
+    if addon_data.core and addon_data.core.GetActiveAttackMode then
+        attack_mode = addon_data.core.GetActiveAttackMode()
+    end
+
+    if attack_mode == "melee" then
+        return false
+    end
+
+    if not addon_data.utils.ShouldShowByDistanceCondition(settings.display_condition, attack_mode, false) then
+        return false
+    end
+
+    return true
+end
+
+addon_data.hunter_autoshot.ShouldReplacePlayerMainhandBar = function()
+    local settings = character_hunter_autoshot_settings
+    if not settings then
+        return false
+    end
+
+    local placement_mode = addon_data.hunter_autoshot.NormalizePlacementMode(settings.placement_mode)
+    if placement_mode ~= "replace_mainhand" then
+        return false
+    end
+
+    return addon_data.hunter_autoshot.ShouldShowBar()
+end
+
 --- Updating and initializing visuals
 --- ---------------------------------
 addon_data.hunter_autoshot.UpdateVisualsOnUpdate = function()
@@ -483,6 +567,17 @@ addon_data.hunter_autoshot.UpdateVisualsOnUpdate = function()
     if not frame or not frame.shot_bar then
         return
     end
+    local should_show = addon_data.hunter_autoshot.ShouldShowBar()
+    if not should_show then
+        frame:Hide()
+        return
+    end
+
+    if not frame:IsShown() then
+        frame:Show()
+    end
+
+    local bar_width, bar_height = addon_data.hunter_autoshot.GetVisualDimensions()
     local range_speed = addon_data.hunter_autoshot.range_speed
     local shot_timer = addon_data.hunter_autoshot.shot_timer
     local auto_cast_time = addon_data.hunter_autoshot.auto_cast_time
@@ -498,7 +593,7 @@ addon_data.hunter_autoshot.UpdateVisualsOnUpdate = function()
         if not settings.one_bar then
             if addon_data.hunter_autoshot.auto_shot_ready then
                 frame.shot_bar:SetVertexColor(settings.auto_cast_r, settings.auto_cast_g, settings.auto_cast_b, settings.auto_cast_a)
-                new_width = settings.width * (auto_cast_time - shot_timer) / auto_cast_time
+                new_width = bar_width * (auto_cast_time - shot_timer) / auto_cast_time
                 frame.multishot_clip_bar:Hide()
             else
                 if addon_data.hunter_autoshot.spell_GCD > 0.5 then
@@ -506,50 +601,54 @@ addon_data.hunter_autoshot.UpdateVisualsOnUpdate = function()
 				else
 					frame.shot_bar:SetVertexColor(settings.cooldown_r, settings.cooldown_g, settings.cooldown_b, settings.cooldown_a)
 				end
-                new_width = settings.width * ((shot_timer - auto_cast_time) / (range_speed - auto_cast_time))
+                new_width = bar_width * ((shot_timer - auto_cast_time) / (range_speed - auto_cast_time))
                 if settings.show_multishot_clip_bar then
                     frame.multishot_clip_bar:Show()
-                    multishot_clip_width = math.min((settings.width * 2) * (mult_cast_time / (addon_data.hunter_autoshot.range_speed)), settings.width)
+                    multishot_clip_width = math.min((bar_width * 2) * (mult_cast_time / (addon_data.hunter_autoshot.range_speed)), bar_width)
                     frame.multishot_clip_bar:SetWidth(multishot_clip_width)
                 end
             end
             if new_width < 2 then
                 new_width = 2
             end
-            frame.shot_bar:SetWidth(math.min(new_width, settings.width))
+            frame.shot_bar:SetWidth(math.min(new_width, bar_width))
         else
 		    if addon_data.hunter_autoshot.spell_GCD > 0.2 then
 				frame.shot_bar:SetVertexColor(0.8, 0.64, 0, 1)
 			else
 				frame.shot_bar:SetVertexColor(settings.cooldown_r, settings.cooldown_g, settings.cooldown_b, settings.cooldown_a)
 			end
-            timer_width = settings.width * ((addon_data.hunter_autoshot.range_speed - addon_data.hunter_autoshot.shot_timer) / addon_data.hunter_autoshot.range_speed)
+            timer_width = bar_width * ((addon_data.hunter_autoshot.range_speed - addon_data.hunter_autoshot.shot_timer) / addon_data.hunter_autoshot.range_speed)
             if addon_data.hunter_autoshot.auto_shot_ready then
-                auto_shot_cast_width = settings.width * (addon_data.hunter_autoshot.shot_timer / addon_data.hunter_autoshot.range_speed)
+                auto_shot_cast_width = bar_width * (addon_data.hunter_autoshot.shot_timer / addon_data.hunter_autoshot.range_speed)
             else
-                auto_shot_cast_width = settings.width * (addon_data.hunter_autoshot.auto_cast_time / addon_data.hunter_autoshot.range_speed)
+                auto_shot_cast_width = bar_width * (addon_data.hunter_autoshot.auto_cast_time / addon_data.hunter_autoshot.range_speed)
             end
             if settings.show_multishot_clip_bar then
                 frame.multishot_clip_bar:Show()
-                multishot_clip_width = math.min(settings.width * (mult_cast_time / range_speed ), settings.width)
+                multishot_clip_width = math.min(bar_width * (mult_cast_time / range_speed ), bar_width)
                 frame.multishot_clip_bar:SetWidth(5)
-                multi_offset = (settings.width * (addon_data.hunter_autoshot.auto_cast_time / addon_data.hunter_autoshot.range_speed)) + multishot_clip_width
+                multi_offset = (bar_width * (addon_data.hunter_autoshot.auto_cast_time / addon_data.hunter_autoshot.range_speed)) + multishot_clip_width
                 frame.multishot_clip_bar:SetPoint('BOTTOMRIGHT', -multi_offset, 0)
             end
-            frame.shot_bar:SetWidth(math.min(timer_width, settings.width))
+            frame.shot_bar:SetWidth(math.min(timer_width, bar_width))
             frame.auto_shot_cast_bar:SetWidth(math.max(auto_shot_cast_width, 0.001))
         end
-		frame:SetSize(settings.width, settings.height)
+		frame:SetSize(bar_width, bar_height)
     end
 end
 
 addon_data.hunter_autoshot.UpdateVisualsOnSettingsChange = function()
     local settings = character_hunter_autoshot_settings
     local frame = addon_data.hunter_autoshot.frame
+	local anchor_settings = settings
+	local bar_width, bar_height, bar_fontsize = addon_data.hunter_autoshot.GetVisualDimensions()
+	if addon_data.hunter_autoshot.UsesPlayerMainhandAnchor() and character_player_settings then
+		anchor_settings = character_player_settings
+	end
 	if settings.enabled then
-        frame:Show()
         frame:ClearAllPoints()
-        frame:SetPoint(settings.point, UIParent, settings.rel_point, settings.x_offset, settings.y_offset)
+        frame:SetPoint(anchor_settings.point, UIParent, anchor_settings.rel_point, anchor_settings.x_offset, anchor_settings.y_offset)
         if settings.show_border then
             addon_data.utils.SetBackdropCompat(frame.backplane,
                 "Interface/AddOns/WeaponSwingTimer/Images/Background",
@@ -575,14 +674,14 @@ addon_data.hunter_autoshot.UpdateVisualsOnSettingsChange = function()
             frame.shot_bar:SetVertexColor(settings.cooldown_r, settings.cooldown_g, settings.cooldown_b, settings.cooldown_a)
             frame.auto_shot_cast_bar:Show()
             frame.auto_shot_cast_bar:SetPoint('BOTTOMRIGHT', 0, 0)
-            frame.auto_shot_cast_bar:SetHeight(settings.height)
+            frame.auto_shot_cast_bar:SetHeight(bar_height)
             frame.auto_shot_cast_bar:SetVertexColor(settings.auto_cast_r, settings.auto_cast_g, settings.auto_cast_b, settings.auto_cast_a)
         end
-        frame.shot_bar_text:SetPoint("BOTTOMRIGHT", -5, (settings.height / 2) - (settings.fontsize / 2))
+        frame.shot_bar_text:SetPoint("BOTTOMRIGHT", -5, (bar_height / 2) - (bar_fontsize / 2))
         frame.shot_bar_text:SetTextColor(1.0, 1.0, 1.0, 1.0)
-		frame.shot_bar_text:SetFont("Fonts/FRIZQT__.ttf", settings.fontsize)
+		frame.shot_bar_text:SetFont("Fonts/FRIZQT__.ttf", bar_fontsize)
 		
-        frame.shot_bar:SetHeight(settings.height)
+        frame.shot_bar:SetHeight(bar_height)
         if settings.classic_bars then
             addon_data.utils.SetTextureFile(frame.shot_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Bar')
             addon_data.utils.SetTextureFile(frame.auto_shot_cast_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Bar')
@@ -596,7 +695,7 @@ addon_data.hunter_autoshot.UpdateVisualsOnSettingsChange = function()
         else
             frame.multishot_clip_bar:SetPoint("BOTTOMRIGHT", 0, 0)
         end
-        frame.multishot_clip_bar:SetHeight(settings.height)
+        frame.multishot_clip_bar:SetHeight(bar_height)
 		addon_data.utils.SetTextureColor(frame.multishot_clip_bar, settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a)
 		
         if settings.show_multishot_clip_bar then
@@ -608,6 +707,12 @@ addon_data.hunter_autoshot.UpdateVisualsOnSettingsChange = function()
             frame.shot_bar_text:Show()
         else
             frame.shot_bar_text:Hide()
+        end
+
+        if addon_data.hunter_autoshot.ShouldShowBar() then
+            frame:Show()
+        else
+            frame:Hide()
         end
     else
         frame:Hide()
@@ -668,5 +773,9 @@ addon_data.hunter_autoshot.InitializeVisuals = function()
     -- Show it off
     addon_data.hunter_autoshot.UpdateVisualsOnSettingsChange()
     addon_data.hunter_autoshot.UpdateVisualsOnUpdate()
-    frame:Show()
+    if addon_data.hunter_autoshot.ShouldShowBar() then
+        frame:Show()
+    else
+        frame:Hide()
+    end
 end

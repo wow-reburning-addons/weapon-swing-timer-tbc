@@ -92,3 +92,106 @@ addon_data.utils.SetBackdropCompat = function(frame, bg_file, edge_file, tile_si
         insets = insets,
     })
 end
+
+addon_data.utils.IsValidHostileTarget = function()
+    if not UnitExists("target") then
+        return false
+    end
+
+    if UnitIsDead("target") then
+        return false
+    end
+
+    if not UnitCanAttack("player", "target") then
+        return false
+    end
+
+    return true
+end
+
+addon_data.utils.IsTargetInMeleeRange = function()
+    if not addon_data.utils.IsValidHostileTarget() then
+        return nil
+    end
+
+    if CheckInteractDistance then
+        local in_range_duel = CheckInteractDistance("target", 3)
+        if (in_range_duel == 1) or (in_range_duel == true) then
+            return true
+        end
+
+        if (in_range_duel == 0) or (in_range_duel == false) then
+            return false
+        end
+
+        local in_range_trade = CheckInteractDistance("target", 2)
+        if (in_range_trade == 1) or (in_range_trade == true) then
+            return true
+        end
+
+        if (in_range_trade == 0) or (in_range_trade == false) then
+            return false
+        end
+    end
+
+    if IsSpellInRange and ATTACK then
+        local attack_range = IsSpellInRange(ATTACK, "target")
+        if attack_range == 1 then
+            return true
+        end
+
+        if attack_range == 0 then
+            return false
+        end
+    end
+
+    return nil
+end
+
+addon_data.utils.NormalizeDisplayCondition = function(display_condition)
+    if display_condition == "always" or display_condition == 1 then
+        return "always"
+    end
+
+    if display_condition == "in_melee" or display_condition == 2 then
+        return "in_melee"
+    end
+
+    if display_condition == "out_of_melee" or display_condition == 3 then
+        return "out_of_melee"
+    end
+
+    return "always"
+end
+
+addon_data.utils.ShouldShowByDistanceCondition = function(display_condition, attack_mode, show_when_unknown)
+    local normalized_condition = addon_data.utils.NormalizeDisplayCondition(display_condition)
+
+    if normalized_condition == "always" then
+        return true
+    end
+
+    local in_melee_range = addon_data.utils.IsTargetInMeleeRange()
+    if in_melee_range == nil then
+        if attack_mode == "melee" then
+            in_melee_range = true
+        elseif attack_mode == "ranged" then
+            in_melee_range = false
+        else
+            if show_when_unknown == nil then
+                show_when_unknown = false
+            end
+            return show_when_unknown
+        end
+    end
+
+    if normalized_condition == "in_melee" then
+        return in_melee_range
+    end
+
+    if normalized_condition == "out_of_melee" then
+        return not in_melee_range
+    end
+
+    return true
+end
