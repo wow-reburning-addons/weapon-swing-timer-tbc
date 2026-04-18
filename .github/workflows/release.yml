@@ -1,0 +1,138 @@
+name: Release Addon
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Release Notes From Commits
+        id: notes
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+          from collections import OrderedDict
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          output_path = os.environ["GITHUB_OUTPUT"]
+
+          def run(*args):
+              return subprocess.check_output(args, text=True).strip()
+
+          try:
+              prev_tag = run("git", "describe", "--tags", "--abbrev=0", f"{tag}^")
+          except subprocess.CalledProcessError:
+              prev_tag = ""
+
+          if prev_tag:
+              rev_range = f"{prev_tag}..{tag}"
+          else:
+              rev_range = tag
+
+          log_output = run("git", "log", "--pretty=%s\t%h", rev_range)
+
+          categories = OrderedDict([
+              ("Features", []),
+              ("Fixes", []),
+              ("Refactoring", []),
+              ("Documentation", []),
+              ("Maintenance", []),
+              ("Other", []),
+          ])
+
+          for line in [l for l in log_output.splitlines() if l.strip()]:
+              subject, sha = line.split("\t", 1)
+              normalized = subject.strip()
+              readable = re.sub(r"^(feat|fix|refactor|docs|chore|ci|build|test)(\([^)]*\))?:\s*", "", normalized, flags=re.IGNORECASE)
+              commit_link = f"[`{sha}`](https://github.com/{repo}/commit/{sha})"
+              entry = f"- {readable} ({commit_link})"
+
+              lowered = normalized.lower()
+              if re.match(r"^feat(\([^)]*\))?:", lowered):
+                  categories["Features"].append(entry)
+              elif re.match(r"^fix(\([^)]*\))?:", lowered):
+                  categories["Fixes"].append(entry)
+              elif re.match(r"^refactor(\([^)]*\))?:", lowered):
+                  categories["Refactoring"].append(entry)
+              elif re.match(r"^docs(\([^)]*\))?:", lowered):
+                  categories["Documentation"].append(entry)
+              elif re.match(r"^(chore|ci|build|test)(\([^)]*\))?:", lowered):
+                  categories["Maintenance"].append(entry)
+              else:
+                  categories["Other"].append(entry)
+
+          lines = ["## Changelog"]
+          if prev_tag:
+              compare_url = f"https://github.com/{repo}/compare/{prev_tag}...{tag}"
+              lines.append(f"\nChanges since `{prev_tag}` ([compare]({compare_url})).")
+          else:
+              lines.append("\nInitial tagged release.")
+
+          has_changes = any(categories.values())
+          if not has_changes:
+              lines.append("\n- No commit changes found for this tag.")
+          else:
+              for title, entries in categories.items():
+                  if not entries:
+                      continue
+                  lines.append(f"\n### {title}")
+                  lines.extend(entries)
+
+          release_notes = "\n".join(lines) + "\n"
+
+          with open("release_notes.md", "w", encoding="utf-8") as f:
+              f.write(release_notes)
+
+          with open(output_path, "a", encoding="utf-8") as out:
+              out.write("release_notes<<EOF\n")
+              out.write(release_notes)
+              out.write("EOF\n")
+          PY
+
+      - name: Package Addon
+        id: package
+        shell: bash
+        run: |
+          archive_name="WeaponSwingTimer-${GITHUB_REF_NAME}.zip"
+          package_root="dist/WeaponSwingTimer"
+
+          mkdir -p "$package_root"
+
+          shopt -s dotglob
+          for item in *; do
+            case "$item" in
+              .git|.github|dist)
+                continue
+                ;;
+            esac
+            cp -R "$item" "$package_root/"
+          done
+
+          (
+            cd dist
+            zip -r "$archive_name" "WeaponSwingTimer"
+          )
+
+          echo "archive_path=dist/$archive_name" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.archive_path }}
+          body: ${{ steps.notes.outputs.release_notes }}
