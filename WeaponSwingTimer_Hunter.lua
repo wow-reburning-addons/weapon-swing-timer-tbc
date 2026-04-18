@@ -1,4 +1,15 @@
 local addon_name, addon_data = ...
+if not addon_data then
+    addon_name = "WeaponSwingTimer"
+    addon_data = _G.WeaponSwingTimer_AddonData
+    if not addon_data then
+        addon_data = {}
+        _G.WeaponSwingTimer_AddonData = addon_data
+    end
+else
+    _G.WeaponSwingTimer_AddonData = addon_data
+end
+
 local L = addon_data.localization_table
 
 --- define addon structure from the above local variable
@@ -146,7 +157,7 @@ end
 addon_data.hunter.OnInventoryChange = function()
 	local _, class, _ = UnitClass("player")
 	if (class == "HUNTER" or class == "MAGE" or class == "PRIEST" or class == "WARLOCK") then
-		addon_data.hunter.range_weapon_id = GetInventoryItemID("player", 18)
+		addon_data.hunter.range_weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 18)
 		local weapon_id = addon_data.hunter.range_weapon_id
 	
 		if weapon_id == nil then
@@ -161,7 +172,7 @@ end
 addon_data.hunter.FeignDeath = function()
     addon_data.hunter.last_shot_time = GetTime()
 	if not addon_data.hunter.FeignFullReset then
-		local weapon_id = GetInventoryItemID("player", 18)
+		local weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 18)
 		addon_data.hunter.range_speed = addon_data.ranged_DB.item_ids[weapon_id].base_speed + 0.15
 		addon_data.hunter.FeignFullReset = true
 	end
@@ -173,7 +184,7 @@ addon_data.hunter.UpdateRangeCastSpeedModifier = function()
 	local _, class, _ = UnitClass("player")
 	
 	if addon_data.hunter.base_speed == 1 and (class == "HUNTER" or class == "MAGE" or class == "PRIEST" or class == "WARLOCK") then 
-		addon_data.hunter.range_weapon_id = GetInventoryItemID("player", 18)
+		addon_data.hunter.range_weapon_id = addon_data.utils.GetInventoryItemIDCompat("player", 18)
 		local weapon_id = addon_data.hunter.range_weapon_id
 		-- added case for if no ranged equipped
 		if weapon_id == nil then
@@ -296,13 +307,16 @@ addon_data.hunter.OnStopAutorepeatSpell = function()
 end
 -- Using combat log to detect pushback hits as well as starting to use spell cast events to replace the old version of detection that was implied
 addon_data.hunter.OnCombatLogUnfiltered = function(combat_info)
-    local _, event, _, casterID, _, _, _, targetID, targetName, _, _, spellID, name, _ = unpack(combat_info)
-	local _, rank, icon, castTime = GetSpellInfo(spellID)
-	local icon, castTime = select(3, GetSpellInfo(spellID))
+    local event = combat_info.event
+    local casterID = combat_info.source_guid
+    local spellID = combat_info.spell_id
 
 	if casterID == UnitGUID("player") then
 	
 		if event == "SPELL_CAST_START" then
+			if not spellID then
+				return
+			end
 		
 				addon_data.hunter.FeignStatus = false
 				addon_data.hunter.StartCastingSpell(spellID)
@@ -410,6 +424,9 @@ end
 addon_data.hunter.UpdateVisualsOnUpdate = function()
     local settings = character_hunter_settings
     local frame = addon_data.hunter.frame
+    if not frame or not frame.shot_bar then
+        return
+    end
     local range_speed = addon_data.hunter.range_speed
     local shot_timer = addon_data.hunter.shot_timer
     local auto_cast_time = addon_data.hunter.auto_cast_time
@@ -478,17 +495,19 @@ addon_data.hunter.UpdateVisualsOnSettingsChange = function()
         frame:ClearAllPoints()
         frame:SetPoint(settings.point, UIParent, settings.rel_point, settings.x_offset, settings.y_offset)
         if settings.show_border then
-            frame.backplane:SetBackdrop({
-                bgFile = "Interface/AddOns/WeaponSwingTimer/Images/Background", 
-                edgeFile = "Interface/AddOns/WeaponSwingTimer/Images/Border", 
-                tile = true, tileSize = 16, edgeSize = 12, 
-                insets = { left = 8, right = 8, top = 8, bottom = 8}})
+            addon_data.utils.SetBackdropCompat(frame.backplane,
+                "Interface/AddOns/WeaponSwingTimer/Images/Background",
+                "Interface/AddOns/WeaponSwingTimer/Images/Border",
+                16,
+                12,
+                { left = 8, right = 8, top = 8, bottom = 8 })
         else
-            frame.backplane:SetBackdrop({
-                bgFile = "Interface/AddOns/WeaponSwingTimer/Images/Background", 
-                edgeFile = nil, 
-                tile = true, tileSize = 16, edgeSize = 16, 
-                insets = { left = 8, right = 8, top = 8, bottom = 8}})
+            addon_data.utils.SetBackdropCompat(frame.backplane,
+                "Interface/AddOns/WeaponSwingTimer/Images/Background",
+                nil,
+                16,
+                16,
+                { left = 8, right = 8, top = 8, bottom = 8 })
         end
         frame.backplane:SetBackdropColor(0,0,0,settings.backplane_alpha)
         frame.shot_bar:ClearAllPoints()
@@ -509,11 +528,11 @@ addon_data.hunter.UpdateVisualsOnSettingsChange = function()
 		
         frame.shot_bar:SetHeight(settings.height)
         if settings.classic_bars then
-            frame.shot_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Bar')
-            frame.auto_shot_cast_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Bar')
+            addon_data.utils.SetTextureFile(frame.shot_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Bar')
+            addon_data.utils.SetTextureFile(frame.auto_shot_cast_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Bar')
         else
-            frame.shot_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Background')
-            frame.auto_shot_cast_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Background')
+            addon_data.utils.SetTextureFile(frame.shot_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Background')
+            addon_data.utils.SetTextureFile(frame.auto_shot_cast_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Background')
         end
         frame.multishot_clip_bar:ClearAllPoints()
         if not settings.one_bar then
@@ -522,7 +541,7 @@ addon_data.hunter.UpdateVisualsOnSettingsChange = function()
             frame.multishot_clip_bar:SetPoint("BOTTOMRIGHT", 0, 0)
         end
         frame.multishot_clip_bar:SetHeight(settings.height)
-        frame.multishot_clip_bar:SetColorTexture(settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a)
+		addon_data.utils.SetTextureColor(frame.multishot_clip_bar, settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a)
 		
         if settings.show_multishot_clip_bar then
             frame.multishot_clip_bar:Show()
@@ -573,7 +592,7 @@ addon_data.hunter.InitializeVisuals = function()
     frame:SetScript("OnDragStart", addon_data.hunter.OnFrameDragStart)
     frame:SetScript("OnDragStop", addon_data.hunter.OnFrameDragStop)
     -- Create the backplane
-    frame.backplane = CreateFrame("Frame", addon_name .. "HunterBackdropFrame", frame, "BackdropTemplate")
+    frame.backplane = CreateFrame("Frame", addon_name .. "HunterBackdropFrame", frame)
     frame.backplane:SetPoint('TOPLEFT', -9, 9)
     frame.backplane:SetPoint('BOTTOMRIGHT', 9, -9)
     frame.backplane:SetFrameStrata('BACKGROUND')
@@ -623,11 +642,11 @@ addon_data.hunter.UpdateConfigPanelValues = function()
     panel.x_offset_editbox:SetCursorPosition(0)
     panel.y_offset_editbox:SetText(tostring(settings.y_offset))
     panel.y_offset_editbox:SetCursorPosition(0)
-    panel.cooldown_color_picker.foreground:SetColorTexture(
+    addon_data.utils.SetTextureColor(panel.cooldown_color_picker.foreground,
         settings.cooldown_r, settings.cooldown_g, settings.cooldown_b, settings.cooldown_a)
-    panel.autoshot_cast_color_picker.foreground:SetColorTexture(
+    addon_data.utils.SetTextureColor(panel.autoshot_cast_color_picker.foreground,
         settings.auto_cast_r, settings.auto_cast_g, settings.auto_cast_b, settings.auto_cast_a)
-    panel.multi_clip_color_picker.foreground:SetColorTexture(
+    addon_data.utils.SetTextureColor(panel.multi_clip_color_picker.foreground,
         settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a)
         
     if settings.one_bar then
@@ -719,7 +738,7 @@ addon_data.hunter.CooldownColorPickerOnClick = function()
             new_a, new_r, new_g, new_b = 1 - OpacitySliderFrame:GetValue(), ColorPickerFrame:GetColorRGB()
         end
         settings.cooldown_r, settings.cooldown_g, settings.cooldown_b, settings.cooldown_a = new_r, new_g, new_b, new_a
-        addon_data.hunter.config_frame.cooldown_color_picker.foreground:SetColorTexture(
+        addon_data.utils.SetTextureColor(addon_data.hunter.config_frame.cooldown_color_picker.foreground,
             settings.cooldown_r, settings.cooldown_g, settings.cooldown_b, settings.cooldown_a)
         addon_data.hunter.UpdateVisualsOnSettingsChange()
     end
@@ -743,7 +762,7 @@ addon_data.hunter.AutoShotCastColorPickerOnClick = function()
             new_a, new_r, new_g, new_b = 1 - OpacitySliderFrame:GetValue(), ColorPickerFrame:GetColorRGB()
         end
         settings.auto_cast_r, settings.auto_cast_g, settings.auto_cast_b, settings.auto_cast_a = new_r, new_g, new_b, new_a
-        addon_data.hunter.config_frame.autoshot_cast_color_picker.foreground:SetColorTexture(
+        addon_data.utils.SetTextureColor(addon_data.hunter.config_frame.autoshot_cast_color_picker.foreground,
             settings.auto_cast_r, settings.auto_cast_g, settings.auto_cast_b, settings.auto_cast_a)
         addon_data.hunter.UpdateVisualsOnSettingsChange()
     end
@@ -767,8 +786,8 @@ addon_data.hunter.MultiClipColorPickerOnClick = function()
             new_a, new_r, new_g, new_b = 1 - OpacitySliderFrame:GetValue(), ColorPickerFrame:GetColorRGB()
         end
         settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a = new_r, new_g, new_b, new_a
-        addon_data.hunter.frame.multishot_clip_bar:SetColorTexture(settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a)
-        addon_data.hunter.config_frame.multi_clip_color_picker.foreground:SetColorTexture(
+        addon_data.utils.SetTextureColor(addon_data.hunter.frame.multishot_clip_bar, settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a)
+        addon_data.utils.SetTextureColor(addon_data.hunter.config_frame.multi_clip_color_picker.foreground,
             settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a)
     end
     ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = 
@@ -862,7 +881,7 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.hunter.WidthEditBoxOnEnter)
-    panel.width_editbox:SetPoint("TOPLEFT", 240, -90, "BOTTOMRIGHT", 275, -115)
+    panel.width_editbox:SetPoint("TOPLEFT", 240, -90)
     -- Height EditBox
     panel.height_editbox = addon_data.config.EditBoxFactory(
         "HunterHeightEditBox",
@@ -871,10 +890,10 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.hunter.HeightEditBoxOnEnter)
-	panel.height_editbox:SetPoint("TOPLEFT", 320, -90, "BOTTOMRIGHT", 225, -115)
+	panel.height_editbox:SetPoint("TOPLEFT", 320, -90)
 	-- Font Size EditBox
 	panel.fontsize_editbox = addon_data.config.EditBoxFactory(
-        "FontSizeEditBox",
+        "HunterFontSizeEditBox",
         panel,
         "Font Size",
         75,
@@ -889,7 +908,7 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.hunter.XOffsetEditBoxOnEnter)
-    panel.x_offset_editbox:SetPoint("TOPLEFT", 200, -140, "BOTTOMRIGHT", 275, -165)
+    panel.x_offset_editbox:SetPoint("TOPLEFT", 200, -140)
     -- Y Offset EditBox
     panel.y_offset_editbox = addon_data.config.EditBoxFactory(
         "HunterYOffsetEditBox",
@@ -898,7 +917,7 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.hunter.YOffsetEditBoxOnEnter)
-    panel.y_offset_editbox:SetPoint("TOPLEFT", 280, -140, "BOTTOMRIGHT", 225, -165)
+    panel.y_offset_editbox:SetPoint("TOPLEFT", 280, -140)
     
     -- Cooldown color picker
     panel.cooldown_color_picker = addon_data.config.color_picker_factory(
@@ -951,7 +970,7 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
     
     -- Hunter Specific Settings Text
     panel.hunter_text = addon_data.config.TextFactory(panel, L["Hunter Specific Settings"], 16)
-    panel.hunter_text:SetPoint("TOPLEFT", 10 , -220)
+    panel.hunter_text:SetPoint("TOPLEFT", 10 , -230)
     panel.hunter_text:SetTextColor(1, 0.9, 0, 1)
 
     -- Show Multi-Shot Clip Bar Checkbox
@@ -961,7 +980,7 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
         L["Multi-Shot clip bar"],
         L["Shows a bar that represents when a Multi-Shot would clip an Auto Shot."],
         addon_data.hunter.ShowMultiShotClipBarCheckBoxOnClick)
-    panel.show_multishot_clip_bar_checkbox:SetPoint("TOPLEFT", 10, -220)
+    panel.show_multishot_clip_bar_checkbox:SetPoint("TOPLEFT", 10, -255)
     
     -- Show Autoshot delay timer Checkbox
     panel.show_autoshot_delay_checkbox = addon_data.config.CheckBoxFactory(
@@ -970,7 +989,7 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
         L["Auto Shot delay timer"],
         L["Shows a timer that represents when Auto shot is delayed."],
         addon_data.hunter.ShowAutoShotDelayCheckBoxOnClick)
-    panel.show_autoshot_delay_checkbox:SetPoint("TOPLEFT", 10, -240)
+    panel.show_autoshot_delay_checkbox:SetPoint("TOPLEFT", 10, -275)
     
     -- Multi-shot clip color picker
     panel.multi_clip_color_picker = addon_data.config.color_picker_factory(
@@ -979,11 +998,11 @@ addon_data.hunter.CreateConfigPanel = function(parent_panel)
         settings.clip_r, settings.clip_g, settings.clip_b, settings.clip_a,
         L["Multi-Shot Clip Color"],
         addon_data.hunter.MultiClipColorPickerOnClick)
-    panel.multi_clip_color_picker:SetPoint('TOPLEFT', 205, -240)
+    panel.multi_clip_color_picker:SetPoint('TOPLEFT', 205, -300)
     
     -- Add the explaination text
     panel.explaination_text = addon_data.config.TextFactory(panel, L["Bar Explanation"], 16)
-    panel.explaination_text:SetPoint("TOPLEFT", 10 , -400)
+    panel.explaination_text:SetPoint("TOPLEFT", 10 , -355)
     panel.explaination_text:SetTextColor(1, 0.9, 0, 1)
     
     -- Add the explaination

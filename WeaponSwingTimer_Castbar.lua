@@ -1,4 +1,15 @@
 local addon_name, addon_data = ...
+if not addon_data then
+    addon_name = "WeaponSwingTimer"
+    addon_data = _G.WeaponSwingTimer_AddonData
+    if not addon_data then
+        addon_data = {}
+        _G.WeaponSwingTimer_AddonData = addon_data
+    end
+else
+    _G.WeaponSwingTimer_AddonData = addon_data
+end
+
 local L = addon_data.localization_table
 --- define addon structure from the above local variable
 addon_data.castbar = {}
@@ -212,12 +223,16 @@ end
 
 -- Using combat log to detect pushback hits as well as starting to use spell cast events to replace the old version of detection that was implied
 addon_data.castbar.OnCombatLogUnfiltered = function(combat_info)
-    local _, event, _, casterID, _, _, _, targetID, targetName, _, _, spellID, name, _ = unpack(combat_info)
-	local _, rank, icon, castTime = GetSpellInfo(spellID)
-	local icon, castTime = select(3, GetSpellInfo(spellID))
+    local event = combat_info.event
+    local casterID = combat_info.source_guid
+    local targetID = combat_info.dest_guid
+	local spellID = combat_info.spell_id
 	if casterID == UnitGUID("player") then
 	
 		if event == "SPELL_CAST_START" then
+			if not spellID then
+				return
+			end
 		  
 				addon_data.hunter.FeignStatus = false
 				if addon_data.castbar.is_spell_multi_shot(spellID) or addon_data.castbar.is_spell_aimed_shot(spellID) then
@@ -336,6 +351,9 @@ end
 addon_data.castbar.UpdateVisualsOnUpdate = function()
     local settings = character_castbar_settings
     local frame = addon_data.castbar.frame
+    if not frame or not frame.spell_bar then
+        return
+    end
 
     if addon_data.core.in_combat or addon_data.castbar.casting_shot then
 		if addon_data.castbar.casting_shot then
@@ -396,17 +414,19 @@ addon_data.castbar.UpdateVisualsOnSettingsChange = function()
         frame:ClearAllPoints()
         frame:SetPoint(settings.point, UIParent, settings.rel_point, settings.x_offset, settings.y_offset)
         if settings.show_border then
-            frame.backplane:SetBackdrop({
-                bgFile = "Interface/AddOns/WeaponSwingTimer/Images/Background", 
-                edgeFile = "Interface/AddOns/WeaponSwingTimer/Images/Border", 
-                tile = true, tileSize = 16, edgeSize = 12, 
-                insets = { left = 8, right = 8, top = 8, bottom = 8}})
+            addon_data.utils.SetBackdropCompat(frame.backplane,
+                "Interface/AddOns/WeaponSwingTimer/Images/Background",
+                "Interface/AddOns/WeaponSwingTimer/Images/Border",
+                16,
+                12,
+                { left = 8, right = 8, top = 8, bottom = 8 })
         else
-            frame.backplane:SetBackdrop({
-                bgFile = "Interface/AddOns/WeaponSwingTimer/Images/Background", 
-                edgeFile = nil, 
-                tile = true, tileSize = 16, edgeSize = 16, 
-                insets = { left = 8, right = 8, top = 8, bottom = 8}})
+            addon_data.utils.SetBackdropCompat(frame.backplane,
+                "Interface/AddOns/WeaponSwingTimer/Images/Background",
+                nil,
+                16,
+                16,
+                { left = 8, right = 8, top = 8, bottom = 8 })
         end
 		frame:SetAlpha(1)
         frame.backplane:SetBackdropColor(0,0,0,settings.backplane_alpha)
@@ -418,14 +438,14 @@ addon_data.castbar.UpdateVisualsOnSettingsChange = function()
         frame.spell_bar:SetPoint("TOPLEFT", 0, 0)
         frame.spell_bar:SetHeight(settings.height)
 
-		frame.spell_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Background')
+		addon_data.utils.SetTextureFile(frame.spell_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Background')
         frame.spell_spark:SetSize(16, settings.height)
         frame.spell_text_center:SetPoint("TOP", 2, -(settings.height / 2) + (settings.fontsize / 2))
 		frame.spell_text_center:SetFont("Fonts/FRIZQT__.ttf", settings.fontsize)
 		
 		frame.cast_latency:SetHeight(settings.height)
         frame.cast_latency:SetPoint("TOPLEFT", 0, 0)
-        frame.cast_latency:SetColorTexture(1, 0, 0, 0.75)
+        addon_data.utils.SetTextureColor(frame.cast_latency, 1, 0, 0, 0.75)
         if settings.show_latency_bars then
             frame.cast_latency:Show()
         else
@@ -477,7 +497,7 @@ addon_data.castbar.InitializeVisuals = function()
     frame:SetScript("OnDragStart", addon_data.castbar.OnFrameDragStart)
     frame:SetScript("OnDragStop", addon_data.castbar.OnFrameDragStop)
     -- Create the backplane
-    frame.backplane = CreateFrame("Frame", addon_name .. "HunterBackdropFrame", frame, "BackdropTemplate")
+    frame.backplane = CreateFrame("Frame", addon_name .. "CastbarBackdropFrame", frame)
     frame.backplane:SetPoint('TOPLEFT', -9, 9)
     frame.backplane:SetPoint('BOTTOMRIGHT', 9, -9)
     frame.backplane:SetFrameStrata('BACKGROUND')
@@ -491,7 +511,7 @@ addon_data.castbar.InitializeVisuals = function()
     frame.spell_bar_text:SetJustifyH("CENTER")
     -- Create the spell spark
     frame.spell_spark = frame:CreateTexture(nil,"OVERLAY")
-    frame.spell_spark:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Spark')
+    addon_data.utils.SetTextureFile(frame.spell_spark, 'Interface/AddOns/WeaponSwingTimer/Images/Spark')
     -- Create the range spell shot bar center text
     frame.spell_text_center = frame:CreateFontString(nil,"OVERLAY")
     frame.spell_text_center:SetFont("Fonts/FRIZQT__.ttf", settings.fontsize)
@@ -602,7 +622,7 @@ addon_data.castbar.BackplaneAlphaOnValChange = function(self)
 end
 --- Initializes the main setting panel including layout, alignment, and design
 addon_data.castbar.CreateConfigPanel = function(parent_panel)
-    addon_data.castbar.config_frame = CreateFrame("Frame", addon_name .. "HunterConfigPanel", parent_panel)
+    addon_data.castbar.config_frame = CreateFrame("Frame", addon_name .. "CastbarConfigPanel", parent_panel)
     local panel = addon_data.castbar.config_frame
     local settings = character_castbar_settings
     
@@ -623,7 +643,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.castbar.WidthEditBoxOnEnter)
-    panel.width_editbox:SetPoint("TOPLEFT", 240, -90, "BOTTOMRIGHT", 275, -115)
+    panel.width_editbox:SetPoint("TOPLEFT", 240, -90)
     -- Height EditBox
     panel.height_editbox = addon_data.config.EditBoxFactory(
         "CastBarHeightEditBox",
@@ -632,10 +652,10 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.castbar.HeightEditBoxOnEnter)
-	panel.height_editbox:SetPoint("TOPLEFT", 320, -90, "BOTTOMRIGHT", 225, -115)
+	panel.height_editbox:SetPoint("TOPLEFT", 320, -90)
 	-- Font Size EditBox
 	panel.fontsize_editbox = addon_data.config.EditBoxFactory(
-        "FontSizeEditBox",
+        "CastBarFontSizeEditBox",
         panel,
         "Font Size",
         75,
@@ -650,7 +670,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.castbar.XOffsetEditBoxOnEnter)
-    panel.x_offset_editbox:SetPoint("TOPLEFT", 200, -140, "BOTTOMRIGHT", 275, -165)
+    panel.x_offset_editbox:SetPoint("TOPLEFT", 200, -140)
     -- Y Offset EditBox
     panel.y_offset_editbox = addon_data.config.EditBoxFactory(
         "CastBarYOffsetEditBox",
@@ -659,7 +679,7 @@ addon_data.castbar.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.castbar.YOffsetEditBoxOnEnter)
-    panel.y_offset_editbox:SetPoint("TOPLEFT", 280, -140, "BOTTOMRIGHT", 225, -165)
+    panel.y_offset_editbox:SetPoint("TOPLEFT", 280, -140)
          
     -- In Combat Alpha Slider
     panel.in_combat_alpha_slider = addon_data.config.SliderFactory(

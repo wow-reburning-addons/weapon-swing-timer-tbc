@@ -1,4 +1,15 @@
 local addon_name, addon_data = ...
+if not addon_data then
+    addon_name = "WeaponSwingTimer"
+    addon_data = _G.WeaponSwingTimer_AddonData
+    if not addon_data then
+        addon_data = {}
+        _G.WeaponSwingTimer_AddonData = addon_data
+    end
+else
+    _G.WeaponSwingTimer_AddonData = addon_data
+end
+
 local L = addon_data.localization_table
 
 addon_data.target = {}
@@ -38,13 +49,13 @@ addon_data.target.guid = 0
 addon_data.target.main_swing_timer = 0.00001
 addon_data.target.prev_main_weapon_speed = 2
 addon_data.target.main_weapon_speed = 2
-addon_data.target.main_weapon_id = GetInventoryItemID("target", 16)
+addon_data.target.main_weapon_id = addon_data.utils.GetInventoryItemIDCompat("target", 16)
 addon_data.target.main_speed_changed = false
 
 addon_data.target.off_swing_timer = 0.00001
 addon_data.target.prev_off_weapon_speed = 2
 addon_data.target.off_weapon_speed = 2
-addon_data.target.off_weapon_id = GetInventoryItemID("target", 17)
+addon_data.target.off_weapon_id = addon_data.utils.GetInventoryItemIDCompat("target", 17)
 addon_data.target.has_offhand = false
 addon_data.target.off_speed_changed = false
 
@@ -74,15 +85,15 @@ end
 --[[============================================================================================]]--
 addon_data.target.OnPlayerTargetChanged = function()
     if UnitExists("target") then
-        addon_data.target.class = UnitClass("target")[2]
+        addon_data.target.class = addon_data.utils.GetClassToken("target")
         addon_data.target.guid = UnitGUID("target")
         addon_data.target.ZeroizeSwingTimers()
     end
 end
 
 addon_data.target.OnInventoryChange = function()
-    local new_main_guid = GetInventoryItemID("target", 16)
-    local new_off_guid = GetInventoryItemID("target", 17)
+    local new_main_guid = addon_data.utils.GetInventoryItemIDCompat("target", 16)
+    local new_off_guid = addon_data.utils.GetInventoryItemIDCompat("target", 17)
     -- Check for a main hand weapon change
     if addon_data.target.main_weapon_id ~= new_main_guid then
         addon_data.target.UpdateMainWeaponSpeed()
@@ -128,21 +139,20 @@ addon_data.target.OnUpdate = function(elapsed)
 end
 
 addon_data.target.OnCombatLogUnfiltered = function(combat_info)
-    local _, event, _, source_guid, _, _, _, dest_guid, _, _, _, _, spell_name, _ = unpack(combat_info)
-    if (source_guid == addon_data.target.guid) then
+    local event = combat_info.event
+    if combat_info.source_guid == addon_data.target.guid then
         if (event == "SWING_DAMAGE") then
-            local _, _, _, _, _, _, _, _, _, is_offhand = select(12, unpack(combat_info))
-            if is_offhand then
+            if combat_info.is_offhand then
                 addon_data.target.ResetOffSwingTimer()
             else
                 addon_data.target.ResetMainSwingTimer()
             end
         elseif (event == "SWING_MISSED") then
-            local miss_type, is_offhand = select(12, unpack(combat_info))
-            addon_data.core.MissHandler("target", miss_type, is_offhand)
+            addon_data.core.MissHandler("target", combat_info.miss_type, combat_info.is_offhand)
         elseif (event == "SPELL_DAMAGE") or (event == "SPELL_MISSED") then
-            local _, _, _, _, _, _, spell_id = GetSpellInfo(spell_name)
-            addon_data.core.SpellHandler("target", spell_id)
+            if combat_info.spell_id then
+                addon_data.core.SpellHandler("target", combat_info.spell_id)
+            end
         end
     end
     
@@ -237,6 +247,9 @@ end
 addon_data.target.UpdateVisualsOnUpdate = function()
     local settings = character_target_settings
     local frame = addon_data.target.frame
+    if not frame or not frame.main_bar then
+        return
+    end
     if settings.enabled and UnitExists("target") then
         frame:Show()
         local main_speed = addon_data.target.main_weapon_speed
@@ -325,25 +338,27 @@ addon_data.target.UpdateVisualsOnSettingsChange = function()
         frame:SetPoint(settings.point, UIParent, settings.rel_point, settings.x_offset, settings.y_offset)
         frame:SetWidth(settings.width)
         if settings.show_border then
-            frame.backplane:SetBackdrop({
-                bgFile = "Interface/AddOns/WeaponSwingTimer/Images/Background", 
-                edgeFile = "Interface/AddOns/WeaponSwingTimer/Images/Border", 
-                tile = true, tileSize = 16, edgeSize = 12, 
-                insets = { left = 8, right = 8, top = 8, bottom = 8}})
+            addon_data.utils.SetBackdropCompat(frame.backplane,
+                "Interface/AddOns/WeaponSwingTimer/Images/Background",
+                "Interface/AddOns/WeaponSwingTimer/Images/Border",
+                16,
+                12,
+                { left = 8, right = 8, top = 8, bottom = 8 })
         else
-            frame.backplane:SetBackdrop({
-                bgFile = "Interface/AddOns/WeaponSwingTimer/Images/Background", 
-                edgeFile = nil, 
-                tile = true, tileSize = 16, edgeSize = 16, 
-                insets = { left = 8, right = 8, top = 8, bottom = 8}})
+            addon_data.utils.SetBackdropCompat(frame.backplane,
+                "Interface/AddOns/WeaponSwingTimer/Images/Background",
+                nil,
+                16,
+                16,
+                { left = 8, right = 8, top = 8, bottom = 8 })
         end
         frame.backplane:SetBackdropColor(0, 0, 0, settings.backplane_alpha)
         frame.main_bar:SetPoint("TOPLEFT", 0, 0)
         frame.main_bar:SetHeight(settings.height)
          if settings.classic_bars then
-            frame.main_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Bar')
+            addon_data.utils.SetTextureFile(frame.main_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Bar')
         else
-            frame.main_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Background')
+            addon_data.utils.SetTextureFile(frame.main_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Background')
         end
         frame.main_bar:SetVertexColor(settings.main_r, settings.main_g, settings.main_b, settings.main_a)
         frame.main_spark:SetSize(16, settings.height)
@@ -358,9 +373,9 @@ addon_data.target.UpdateVisualsOnSettingsChange = function()
         frame.off_bar:SetPoint("BOTTOMLEFT", 0, 0)
         frame.off_bar:SetHeight(settings.height)
         if settings.classic_bars then
-            frame.off_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Bar')
+            addon_data.utils.SetTextureFile(frame.off_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Bar')
         else
-            frame.off_bar:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Background')
+            addon_data.utils.SetTextureFile(frame.off_bar, 'Interface/AddOns/WeaponSwingTimer/Images/Background')
         end
         frame.off_bar:SetVertexColor(settings.off_r, settings.off_g, settings.off_b, settings.off_a)
         frame.off_spark:SetSize(16, settings.height)
@@ -441,7 +456,7 @@ addon_data.target.InitializeVisuals = function()
     frame:SetScript("OnDragStart", addon_data.target.OnFrameDragStart)
     frame:SetScript("OnDragStop", addon_data.target.OnFrameDragStop)
     -- Create the backplane
-    frame.backplane = CreateFrame("Frame", addon_name .. "TargetBackdropFrame", frame, "BackdropTemplate")
+    frame.backplane = CreateFrame("Frame", addon_name .. "TargetBackdropFrame", frame)
     frame.backplane:SetPoint('TOPLEFT', -9, 9)
     frame.backplane:SetPoint('BOTTOMRIGHT', 9, -9)
     frame.backplane:SetFrameStrata('BACKGROUND')
@@ -449,7 +464,7 @@ addon_data.target.InitializeVisuals = function()
     frame.main_bar = frame:CreateTexture(nil,"ARTWORK")
     -- Create the main spark
     frame.main_spark = frame:CreateTexture(nil,"OVERLAY")
-    frame.main_spark:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Spark')
+    addon_data.utils.SetTextureFile(frame.main_spark, 'Interface/AddOns/WeaponSwingTimer/Images/Spark')
     -- Create the main hand bar left text
     frame.main_left_text = frame:CreateFontString(nil, "OVERLAY")
     frame.main_left_text:SetFont("Fonts/FRIZQT__.ttf", settings.fontsize)
@@ -464,7 +479,7 @@ addon_data.target.InitializeVisuals = function()
     frame.off_bar = frame:CreateTexture(nil,"ARTWORK")
     -- Create the off spark
     frame.off_spark = frame:CreateTexture(nil,"OVERLAY")
-    frame.off_spark:SetTexture('Interface/AddOns/WeaponSwingTimer/Images/Spark')
+    addon_data.utils.SetTextureFile(frame.off_spark, 'Interface/AddOns/WeaponSwingTimer/Images/Spark')
     -- Create the off hand bar left text
     frame.off_left_text = frame:CreateFontString(nil, "OVERLAY")
     frame.off_left_text:SetFont("Fonts/FRIZQT__.ttf", settings.fontsize)
@@ -505,13 +520,13 @@ addon_data.target.UpdateConfigPanelValues = function()
     panel.x_offset_editbox:SetCursorPosition(0)
     panel.y_offset_editbox:SetText(tostring(settings.y_offset))
     panel.y_offset_editbox:SetCursorPosition(0)
-    panel.main_color_picker.foreground:SetColorTexture(
+    addon_data.utils.SetTextureColor(panel.main_color_picker.foreground,
         settings.main_r, settings.main_g, settings.main_b, settings.main_a)
-    panel.main_text_color_picker.foreground:SetColorTexture(
+    addon_data.utils.SetTextureColor(panel.main_text_color_picker.foreground,
         settings.main_text_r, settings.main_text_g, settings.main_text_b, settings.main_text_a)
-    panel.off_color_picker.foreground:SetColorTexture(
+    addon_data.utils.SetTextureColor(panel.off_color_picker.foreground,
         settings.off_r, settings.off_g, settings.off_b, settings.off_a)
-    panel.off_text_color_picker.foreground:SetColorTexture(
+    addon_data.utils.SetTextureColor(panel.off_text_color_picker.foreground,
         settings.off_text_r, settings.off_text_g, settings.off_text_b, settings.off_text_a)
     panel.in_combat_alpha_slider:SetValue(settings.in_combat_alpha)
     panel.in_combat_alpha_slider.editbox:SetCursorPosition(0)
@@ -594,7 +609,7 @@ addon_data.target.MainColorPickerOnClick = function()
         settings.main_r, settings.main_g, settings.main_b, settings.main_a = new_r, new_g, new_b, new_a
         addon_data.target.frame.main_bar:SetVertexColor(
             settings.main_r, settings.main_g, settings.main_b, settings.main_a)
-        addon_data.target.config_frame.main_color_picker.foreground:SetColorTexture(
+        addon_data.utils.SetTextureColor(addon_data.target.config_frame.main_color_picker.foreground,
             settings.main_r, settings.main_g, settings.main_b, settings.main_a)
     end
     ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = 
@@ -621,7 +636,7 @@ addon_data.target.MainTextColorPickerOnClick = function()
             settings.main_text_r, settings.main_text_g, settings.main_text_b, settings.main_text_a)
         addon_data.target.frame.main_right_text:SetTextColor(
             settings.main_text_r, settings.main_text_g, settings.main_text_b, settings.main_text_a)
-        addon_data.target.config_frame.main_text_color_picker.foreground:SetColorTexture(
+        addon_data.utils.SetTextureColor(addon_data.target.config_frame.main_text_color_picker.foreground,
             settings.main_text_r, settings.main_text_g, settings.main_text_b, settings.main_text_a)
     end
     ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = 
@@ -646,7 +661,7 @@ addon_data.target.OffColorPickerOnClick = function()
         settings.off_r, settings.off_g, settings.off_b, settings.off_a = new_r, new_g, new_b, new_a
         addon_data.target.frame.off_bar:SetVertexColor(
             settings.off_r, settings.off_g, settings.off_b, settings.off_a)
-        addon_data.target.config_frame.off_color_picker.foreground:SetColorTexture(
+        addon_data.utils.SetTextureColor(addon_data.target.config_frame.off_color_picker.foreground,
             settings.off_r, settings.off_g, settings.off_b, settings.off_a)
     end
     ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = 
@@ -673,7 +688,7 @@ addon_data.target.OffTextColorPickerOnClick = function()
             settings.off_text_r, settings.off_text_g, settings.off_text_b, settings.off_text_a)
         addon_data.target.frame.off_right_text:SetTextColor(
             settings.off_text_r, settings.off_text_g, settings.off_text_b, settings.off_text_a)
-        addon_data.target.config_frame.off_text_color_picker.foreground:SetColorTexture(
+        addon_data.utils.SetTextureColor(addon_data.target.config_frame.off_text_color_picker.foreground,
             settings.off_text_r, settings.off_text_g, settings.off_text_b, settings.off_text_a)
     end
     ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = 
@@ -774,7 +789,7 @@ addon_data.target.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.target.WidthEditBoxOnEnter)
-    panel.width_editbox:SetPoint("TOPLEFT", 240, -60, "BOTTOMRIGHT", 275, -85)
+    panel.width_editbox:SetPoint("TOPLEFT", 240, -60)
     -- Height EditBox
     panel.height_editbox = addon_data.config.EditBoxFactory(
         "TargetHeightEditBox",
@@ -783,10 +798,10 @@ addon_data.target.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.target.HeightEditBoxOnEnter)
-    panel.height_editbox:SetPoint("TOPLEFT", 320, -60, "BOTTOMRIGHT", 355, -85)
+    panel.height_editbox:SetPoint("TOPLEFT", 320, -60)
 	-- Font Size EditBox
 	panel.fontsize_editbox = addon_data.config.EditBoxFactory(
-        "FontSizeEditBox",
+        "TargetFontSizeEditBox",
         panel,
         "Font Size",
         75,
@@ -801,7 +816,7 @@ addon_data.target.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.target.XOffsetEditBoxOnEnter)
-    panel.x_offset_editbox:SetPoint("TOPLEFT", 200, -110, "BOTTOMRIGHT", 275, -135)
+    panel.x_offset_editbox:SetPoint("TOPLEFT", 200, -110)
     -- Y Offset EditBox
     panel.y_offset_editbox = addon_data.config.EditBoxFactory(
         "TargetYOffsetEditBox",
@@ -810,7 +825,7 @@ addon_data.target.CreateConfigPanel = function(parent_panel)
         75,
         25,
         addon_data.target.YOffsetEditBoxOnEnter)
-    panel.y_offset_editbox:SetPoint("TOPLEFT", 280, -110, "BOTTOMRIGHT", 355, -135)
+    panel.y_offset_editbox:SetPoint("TOPLEFT", 280, -110)
     
     -- Main-hand color picker
     panel.main_color_picker = addon_data.config.color_picker_factory(

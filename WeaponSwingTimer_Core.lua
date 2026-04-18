@@ -1,4 +1,15 @@
 local addon_name, addon_data = ...
+if not addon_data then
+    addon_name = "WeaponSwingTimer"
+    addon_data = _G.WeaponSwingTimer_AddonData
+    if not addon_data then
+        addon_data = {}
+        _G.WeaponSwingTimer_AddonData = addon_data
+    end
+else
+    _G.WeaponSwingTimer_AddonData = addon_data
+end
+
 local L = addon_data.localization_table
 
 addon_data.core = {}
@@ -21,6 +32,67 @@ addon_data.core.default_settings = {
 }
 
 addon_data.core.in_combat = false
+
+local function GetTrailingBoolean(...)
+    local arg_count = select("#", ...)
+    if arg_count == 0 then
+        return nil
+    end
+
+    local value = select(arg_count, ...)
+    if type(value) == "boolean" then
+        return value
+    end
+
+    return nil
+end
+
+addon_data.core.NormalizeCombatLogEvent = function(is_modern_payload, ...)
+    local event = select(2, ...)
+    if not event then
+        return nil
+    end
+
+    local source_guid, dest_guid
+    local payload_index
+    if is_modern_payload then
+        source_guid = select(4, ...)
+        dest_guid = select(8, ...)
+        payload_index = 12
+    else
+        source_guid = select(3, ...)
+        dest_guid = select(6, ...)
+        payload_index = 9
+    end
+
+    local combat_info = {
+        event = event,
+        source_guid = source_guid,
+        dest_guid = dest_guid,
+        spell_id = nil,
+        spell_name = nil,
+        miss_type = nil,
+        is_offhand = nil,
+    }
+
+    if (event == "SPELL_DAMAGE") or (event == "SPELL_MISSED") or
+       (event == "RANGE_DAMAGE") or (event == "RANGE_MISSED") or
+       (event == "SPELL_CAST_START") or (event == "SPELL_CAST_SUCCESS") then
+        combat_info.spell_id = select(payload_index, ...)
+        combat_info.spell_name = select(payload_index + 1, ...)
+    end
+
+    if event == "SWING_MISSED" then
+        combat_info.miss_type = select(payload_index, ...)
+        combat_info.is_offhand = GetTrailingBoolean(select(payload_index + 1, ...))
+    elseif (event == "SPELL_MISSED") or (event == "RANGE_MISSED") then
+        combat_info.miss_type = select(payload_index + 3, ...)
+    elseif event == "SWING_DAMAGE" then
+        combat_info.is_offhand = GetTrailingBoolean(select(payload_index, ...))
+    end
+
+    return combat_info
+end
 
 local swing_reset_spells = {}
 swing_reset_spells['DRUID'] = {
@@ -525,11 +597,11 @@ swing_reset_spells['WARRIOR'] = {
 }
 
 local function LoadAllSettings()
-    addon_data.core.LoadSettings()
-    addon_data.player.LoadSettings()
-    addon_data.target.LoadSettings()
-    addon_data.hunter.LoadSettings()
-	addon_data.castbar.LoadSettings()
+    if addon_data.core and addon_data.core.LoadSettings then addon_data.core.LoadSettings() end
+    if addon_data.player and addon_data.player.LoadSettings then addon_data.player.LoadSettings() end
+    if addon_data.target and addon_data.target.LoadSettings then addon_data.target.LoadSettings() end
+    if addon_data.hunter and addon_data.hunter.LoadSettings then addon_data.hunter.LoadSettings() end
+	if addon_data.castbar and addon_data.castbar.LoadSettings then addon_data.castbar.LoadSettings() end
 end
 
 addon_data.core.RestoreAllDefaults = function()
@@ -541,11 +613,11 @@ addon_data.core.RestoreAllDefaults = function()
 end
 
 local function InitializeAllVisuals()
-    addon_data.player.InitializeVisuals()
-    addon_data.target.InitializeVisuals()
-    addon_data.hunter.InitializeVisuals()
-	addon_data.castbar.InitializeVisuals()
-    addon_data.config.InitializeVisuals()
+    if addon_data.player and addon_data.player.InitializeVisuals then addon_data.player.InitializeVisuals() end
+    if addon_data.target and addon_data.target.InitializeVisuals then addon_data.target.InitializeVisuals() end
+    if addon_data.hunter and addon_data.hunter.InitializeVisuals then addon_data.hunter.InitializeVisuals() end
+	if addon_data.castbar and addon_data.castbar.InitializeVisuals then addon_data.castbar.InitializeVisuals() end
+    if addon_data.config and addon_data.config.InitializeVisuals then addon_data.config.InitializeVisuals() end
 end
 
 
@@ -576,10 +648,10 @@ addon_data.core.RestoreDefaults = function()
 end
 
 local function CoreFrame_OnUpdate(self, elapsed)
-    addon_data.player.OnUpdate(elapsed)
-    addon_data.target.OnUpdate(elapsed)
-    addon_data.hunter.OnUpdate(elapsed)
-	addon_data.castbar.OnUpdate(elapsed)
+    if addon_data.player and addon_data.player.OnUpdate then addon_data.player.OnUpdate(elapsed) end
+    if addon_data.target and addon_data.target.OnUpdate then addon_data.target.OnUpdate(elapsed) end
+    if addon_data.hunter and addon_data.hunter.OnUpdate then addon_data.hunter.OnUpdate(elapsed) end
+	if addon_data.castbar and addon_data.castbar.OnUpdate then addon_data.castbar.OnUpdate(elapsed) end
 end
 
 addon_data.core.MissHandler = function(unit, miss_type, is_offhand)
@@ -692,7 +764,17 @@ local function CoreFrame_OnEvent(self, event, ...)
     elseif event == "PLAYER_TARGET_CHANGED" then
         addon_data.target.OnPlayerTargetChanged()
     elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        local combat_info = {CombatLogGetCurrentEventInfo()}
+        local combat_info
+        if CombatLogGetCurrentEventInfo then
+            combat_info = addon_data.core.NormalizeCombatLogEvent(true, CombatLogGetCurrentEventInfo())
+        else
+            combat_info = addon_data.core.NormalizeCombatLogEvent(false, unpack(args))
+        end
+
+        if not combat_info then
+            return
+        end
+
         addon_data.player.OnCombatLogUnfiltered(combat_info)
         addon_data.target.OnCombatLogUnfiltered(combat_info)
 		addon_data.hunter.OnCombatLogUnfiltered(combat_info)
@@ -723,8 +805,19 @@ SLASH_WEAPONSWINGTIMER_CONFIG1 = "/WeaponSwingTimer"
 SLASH_WEAPONSWINGTIMER_CONFIG2 = "/weaponswingtimer"
 SLASH_WEAPONSWINGTIMER_CONFIG3 = "/wst"
 SlashCmdList["WEAPONSWINGTIMER_CONFIG"] = function(option)
-    InterfaceOptionsFrame_OpenToCategory("WeaponSwingTimer")
-    InterfaceOptionsFrame_OpenToCategory("WeaponSwingTimer")
+    local panel = addon_data.config and addon_data.config.config_parent_panel
+    if InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
+        InterfaceOptionsFrame_OpenToCategory(panel or "WeaponSwingTimer")
+    elseif InterfaceOptionsFrame_OpenToFrame and panel then
+        InterfaceOptionsFrame_OpenToFrame(panel)
+        InterfaceOptionsFrame_OpenToFrame(panel)
+    elseif InterfaceOptionsFrame then
+        ShowUIPanel(InterfaceOptionsFrame)
+        if panel and InterfaceOptionsList_DisplayPanel then
+            InterfaceOptionsList_DisplayPanel(panel)
+        end
+    end
 end
 
 -- Setup the core of the addon (This is like calling main in C)

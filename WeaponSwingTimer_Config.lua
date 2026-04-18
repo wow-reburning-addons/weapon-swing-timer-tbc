@@ -1,4 +1,15 @@
 local addon_name, addon_data = ...
+if not addon_data then
+    addon_name = "WeaponSwingTimer"
+    addon_data = _G.WeaponSwingTimer_AddonData
+    if not addon_data then
+        addon_data = {}
+        _G.WeaponSwingTimer_AddonData = addon_data
+    end
+else
+    _G.WeaponSwingTimer_AddonData = addon_data
+end
+
 local L = addon_data.localization_table
 
 addon_data.config = {}
@@ -11,7 +22,7 @@ end
 addon_data.config.InitializeVisuals = function()
 
     -- Add the parent panel
-    addon_data.config.config_parent_panel = CreateFrame("Frame", "MyFrame", UIParent)
+    addon_data.config.config_parent_panel = CreateFrame("Frame", addon_name .. "ConfigParentPanel", UIParent)
     local panel = addon_data.config.config_parent_panel
     panel:SetSize(1, 1)
     panel.global_panel = addon_data.config.CreateConfigPanel(panel)
@@ -79,7 +90,7 @@ addon_data.config.CheckBoxFactory = function(g_name, parent, checkbtn_text, tool
 end
 
 addon_data.config.EditBoxFactory = function(g_name, parent, title, w, h, enter_func)
-    local edit_box_obj = CreateFrame("EditBox", addon_name .. g_name, parent, "BackdropTemplate")
+    local edit_box_obj = CreateFrame("EditBox", addon_name .. g_name, parent)
     edit_box_obj.title_text = addon_data.config.TextFactory(edit_box_obj, title, 12)
     edit_box_obj.title_text:SetPoint("TOP", 0, 12)
     edit_box_obj:SetBackdrop({
@@ -126,7 +137,9 @@ addon_data.config.SliderFactory = function(g_name, parent, title, min_val, max_v
     slider.textHigh:SetText(floor(max_val))
     slider.textLow:SetTextColor(0.8,0.8,0.8)
     slider.textHigh:SetTextColor(0.8,0.8,0.8)
-    slider:SetObeyStepOnDrag(true)
+    if slider.SetObeyStepOnDrag then
+        slider:SetObeyStepOnDrag(true)
+    end
     editbox:SetSize(45,30)
     editbox:ClearAllPoints()
     editbox:SetPoint("LEFT", slider, "RIGHT", 15, 0)
@@ -157,11 +170,11 @@ addon_data.config.color_picker_factory = function(g_name, parent, r, g, b, a, te
     local color_picker = CreateFrame('Button', addon_name .. g_name, parent)
     color_picker:SetSize(15, 15)
     color_picker.normal = color_picker:CreateTexture(nil, 'BACKGROUND')
-    color_picker.normal:SetColorTexture(1, 1, 1, 1)
+    addon_data.utils.SetTextureColor(color_picker.normal, 1, 1, 1, 1)
     color_picker.normal:SetPoint('TOPLEFT', -1, 1)
     color_picker.normal:SetPoint('BOTTOMRIGHT', 1, -1)
     color_picker.foreground = color_picker:CreateTexture(nil, 'ARTWORK')
-    color_picker.foreground:SetColorTexture(r, g, b, a)
+    addon_data.utils.SetTextureColor(color_picker.foreground, r, g, b, a)
     color_picker.foreground:SetAllPoints()
     color_picker:SetNormalTexture(color_picker.foreground)
     color_picker:SetScript('OnClick', on_click_func)
