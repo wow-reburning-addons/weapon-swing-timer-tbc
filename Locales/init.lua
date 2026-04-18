@@ -5,13 +5,14 @@ if not addon_data then
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 
-_G.WeaponSwingTimer_LocalizationTable = _G.WeaponSwingTimer_LocalizationTable or addon_data.localization_table or {}
-addon_data.localization_table = _G.WeaponSwingTimer_LocalizationTable
+addon_data.locale = LibStub("AceLocale-3.0")
 
-if not getmetatable(addon_data.localization_table) then
-    setmetatable(addon_data.localization_table, {
+if not addon_data.localization_table then
+    addon_data.localization_table = setmetatable({}, {
         __index = function(_, key)
             return key
         end,
     })
 end
+
+_G.WeaponSwingTimer_LocalizationTable = addon_data.localization_table

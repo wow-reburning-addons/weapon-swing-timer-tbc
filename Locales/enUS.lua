@@ -5,9 +5,14 @@ if not addon_data then
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 
-_G.WeaponSwingTimer_LocalizationTable = _G.WeaponSwingTimer_LocalizationTable or addon_data.localization_table or {}
-addon_data.localization_table = _G.WeaponSwingTimer_LocalizationTable
-local L = addon_data.localization_table
+local AceLocale = addon_data.locale or LibStub("AceLocale-3.0")
+local L = AceLocale:NewLocale(addon_name, "enUS", true)
+if not L then
+    return
+end
+
+addon_data.localization_table = L
+_G.WeaponSwingTimer_LocalizationTable = L
 
 L["core.welcome.version"] = "Thank you for installing WeaponSwingTimer Version"
 L["core.welcome.hint"] = "by WatchYourSixx! Use |cFFFFC300/wst|r for more options."

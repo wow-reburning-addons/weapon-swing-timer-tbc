@@ -5,13 +5,14 @@ if not addon_data then
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 
-if GetLocale() ~= "zhCN" then
+local AceLocale = addon_data.locale or LibStub("AceLocale-3.0")
+local L = AceLocale:NewLocale(addon_name, "zhCN")
+if not L then
     return
 end
 
-_G.WeaponSwingTimer_LocalizationTable = _G.WeaponSwingTimer_LocalizationTable or addon_data.localization_table or {}
-addon_data.localization_table = _G.WeaponSwingTimer_LocalizationTable
-local L = addon_data.localization_table
+addon_data.localization_table = L
+_G.WeaponSwingTimer_LocalizationTable = L
 
 L["core.welcome.version"] = "感谢您安装WeaponSwingTimer版本！"
 L["core.welcome.hint"] = "作者：LeftHandedGlove，持续更新：WatchYourSixx，汉化：Cyanokaze。使用|cFFFFC300/wst|r获取更多选项。"
