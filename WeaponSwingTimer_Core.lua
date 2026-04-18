@@ -52,34 +52,24 @@ local function GetTrailingBoolean(...)
 end
 
 addon_data.core.NormalizeCombatLogEvent = function(...)
-    local event = select(2, ...)
-    local source_guid = select(3, ...)
-    local dest_guid = select(6, ...)
-    local payload_index = 9
+    local first_arg = select(1, ...)
+    local event
+    local source_guid
+    local dest_guid
+    local payload_index
 
-    if (type(event) ~= "string") or (not string.find(event, "_")) then
-        event = select(1, ...)
+    if type(first_arg) == "number" then
+        event = select(2, ...)
+        source_guid = select(3, ...)
+        dest_guid = select(6, ...)
+        payload_index = 9
+    elseif type(first_arg) == "string" then
+        event = first_arg
         source_guid = select(2, ...)
         dest_guid = select(5, ...)
         payload_index = 8
-    end
-
-    -- Modern combat-log payloads can include hideCaster/raidFlags fields.
-    -- Detect those layouts and re-map GUID/payload indexes accordingly.
-    if (type(event) == "string") and string.find(event, "_") then
-        if select(2, ...) == event then
-            if type(select(3, ...)) == "boolean" then
-                source_guid = select(4, ...)
-                dest_guid = select(8, ...)
-                payload_index = 12
-            end
-        elseif select(1, ...) == event then
-            if type(select(2, ...)) == "boolean" then
-                source_guid = select(3, ...)
-                dest_guid = select(7, ...)
-                payload_index = 11
-            end
-        end
+    else
+        return nil
     end
 
     if type(event) ~= "string" then
@@ -751,8 +741,9 @@ addon_data.core.RunSelfTest = function()
 
     local tests = {
         {
-            name = "legacy_swing_damage_mainhand",
+            name = "tbc_swing_damage_mainhand",
             args = {
+                123456.1,
                 "SWING_DAMAGE",
                 "Player-1-00000001", "Player", 0,
                 "Creature-1-00000002", "Target", 0,
@@ -766,11 +757,12 @@ addon_data.core.RunSelfTest = function()
             },
         },
         {
-            name = "modern_swing_damage_offhand",
+            name = "tbc_swing_damage_offhand",
             args = {
-                12345.67, "SWING_DAMAGE", false,
-                "Player-1-00000001", "Player", 0, 0,
-                "Creature-1-00000002", "Target", 0, 0,
+                123456.2,
+                "SWING_DAMAGE",
+                "Player-1-00000001", "Player", 0,
+                "Creature-1-00000002", "Target", 0,
                 95, 1, 0, 0, 0, false, false, false, true,
             },
             expected = {
@@ -781,11 +773,12 @@ addon_data.core.RunSelfTest = function()
             },
         },
         {
-            name = "modern_spell_missed",
+            name = "tbc_spell_missed",
             args = {
-                12346.01, "SPELL_MISSED", false,
-                "Player-1-00000001", "Player", 0, 0,
-                "Creature-1-00000002", "Target", 0, 0,
+                123456.3,
+                "SPELL_MISSED",
+                "Player-1-00000001", "Player", 0,
+                "Creature-1-00000002", "Target", 0,
                 2973, "Raptor Strike", 1,
                 "DODGE",
             },
@@ -861,6 +854,7 @@ function addon_data.core:OnEnable()
 
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "OnPlayerRegenEnabled")
     self:RegisterEvent("PLAYER_REGEN_DISABLED", "OnPlayerRegenDisabled")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnPlayerEnteringWorld")
     self:RegisterEvent("PLAYER_TARGET_CHANGED", "OnPlayerTargetChanged")
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "OnCombatLogEvent")
     self:RegisterEvent("UNIT_INVENTORY_CHANGED", "OnUnitInventoryChanged")
@@ -875,6 +869,7 @@ function addon_data.core:OnEnable()
     InitializeAllVisuals()
     addon_data.player.ZeroizeSwingTimers()
     addon_data.target.ZeroizeSwingTimers()
+    self:OnPlayerEnteringWorld()
 
     if character_core_settings.welcome_message then
         addon_data.utils.PrintMsg(load_message)
@@ -889,16 +884,19 @@ function addon_data.core:OnPlayerRegenDisabled()
     addon_data.core.in_combat = true
 end
 
+function addon_data.core:OnPlayerEnteringWorld()
+    addon_data.core.in_combat = UnitAffectingCombat("player") and true or false
+    addon_data.player.OnInventoryChange(true)
+    addon_data.hunter.OnInventoryChange(true)
+    addon_data.target.OnPlayerTargetChanged()
+end
+
 function addon_data.core:OnPlayerTargetChanged()
     addon_data.target.OnPlayerTargetChanged()
 end
 
 function addon_data.core:OnCombatLogEvent(event, ...)
     local combat_info = addon_data.core.NormalizeCombatLogEvent(...)
-
-    if (not combat_info) and (type(CombatLogGetCurrentEventInfo) == "function") then
-        combat_info = addon_data.core.NormalizeCombatLogEvent(CombatLogGetCurrentEventInfo())
-    end
 
     if not combat_info then
         combat_info = addon_data.core.NormalizeCombatLogEvent(

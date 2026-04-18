@@ -151,7 +151,7 @@ end
 
 addon_data.player.OnCombatLogUnfiltered = function(combat_info)
     local event = combat_info.event
-    if combat_info.source_guid == addon_data.player.guid then
+    if combat_info.source_guid == UnitGUID("player") then
 	
 	-- added check for extra attacks that would accidently reset the swing timer, reset by a sucessful
 		if (event == "SPELL_EXTRA_ATTACKS") then
