@@ -1,188 +1,101 @@
-# WeaponSwingTimer Ideal Specification (WoW 2.4.3)
+# WeaponSwingTimer User Specification (WoW 2.4.3)
 
-## 1) Purpose and Scope
+## 1) Purpose
 
-WeaponSwingTimer tracks and displays combat timing bars for:
+WeaponSwingTimer shows timing bars for combat actions so the player can better plan melee swings, ranged shots, and hunter casts.
 
-- Player melee swings (main-hand and off-hand)
-- Target melee swings (main-hand and off-hand)
-- Ranged/wand shot cycle (Auto Shot / Shoot)
-- Hunter castbar for Aimed Shot and Multi-Shot, including pushback and latency overlay
+The addon is intended for WoW TBC 2.4.3 gameplay.
 
-Target platform is WoW TBC 2.4.3 behavior. Compatibility with 2.4.3 APIs and event payloads has priority.
+## 2) What the Player Sees
 
-## 2) Core Runtime Architecture
+The addon can display up to four visual blocks:
 
-- `WeaponSwingTimer_Core.lua` is the event hub and lifecycle entrypoint.
-- Load order follows `WeaponSwingTimer.toc`:
-  `localization.lua -> WeaponSwingTimer_ranged_DB.lua -> Utils -> Player -> Target -> Castbar -> Hunter -> Config -> Core`
-- Core normalizes combat log payload into a stable `combat_info` object and dispatches to module handlers:
-  - `player.OnCombatLogUnfiltered(combat_info)`
-  - `target.OnCombatLogUnfiltered(combat_info)`
-  - `hunter.OnCombatLogUnfiltered(combat_info)`
-  - `castbar.OnCombatLogUnfiltered(combat_info)`
+- Player melee swing bar (main-hand, optionally off-hand)
+- Target melee swing bar (main-hand, optionally off-hand)
+- Hunter/wand shot bar (Auto Shot or Shoot cycle)
+- Hunter cast bar for Aimed Shot and Multi-Shot
 
-## 3) Lifecycle and Events
+Each block can be enabled, moved, resized, and styled independently.
 
-### Startup
+## 3) Player Melee Bar
 
-On `ADDON_LOADED` for this addon:
+Expected user-facing behavior:
 
-1. Load all saved settings (core + all modules)
-2. Initialize all visuals/frames
-3. Register runtime events
-4. Reset initial swing/shot timers to neutral state
-5. Print welcome message if enabled
+- Shows the current timing of the player's main-hand swing.
+- Optionally shows off-hand timing when dual-wielding.
+- Resets correctly on successful hits and misses.
+- Reacts naturally to combat effects that speed up or delay swings.
+- Uses separate combat and out-of-combat transparency values.
 
-### Runtime events
+## 4) Target Melee Bar
 
-Core must handle at least:
+Expected user-facing behavior:
 
-- `PLAYER_REGEN_ENABLED` / `PLAYER_REGEN_DISABLED` for in-combat state
-- `PLAYER_TARGET_CHANGED`
-- `COMBAT_LOG_EVENT_UNFILTERED`
-- `UNIT_INVENTORY_CHANGED`
-- `START_AUTOREPEAT_SPELL` / `STOP_AUTOREPEAT_SPELL`
-- `UNIT_SPELLCAST_SUCCEEDED`
-- `UNIT_SPELLCAST_FAILED`
-- `UNIT_SPELLCAST_INTERRUPTED`
-- `UNIT_SPELLCAST_FAILED_QUIET`
+- Appears only when there is a valid target.
+- Tracks the target's swing rhythm in real time.
+- Resets and recalculates when target context changes.
+- Supports its own size, position, colors, and text settings.
 
-### Update loop
+## 5) Hunter/Wand Shot Bar
 
-`OnUpdate` continuously updates timers and visual widths/text/alpha for all enabled modules.
+Expected user-facing behavior:
 
-## 4) Player Melee Module
+- Tracks the full ranged attack cycle for Auto Shot or Shoot.
+- Correctly handles start/stop of auto-repeat attacks.
+- Updates when movement or other actions delay the next shot.
+- Supports one-bar or two-phase style (depending on user settings).
+- Optional clip/delay indicators behave consistently with shot timing.
 
-### Functional behavior
+## 6) Hunter Cast Bar (Aimed/Multi)
 
-- Track main-hand swing timer from player combat events.
-- Track off-hand timer when off-hand weapon exists and setting allows it.
-- Reset timers on swing result events (`SWING_DAMAGE`, `SWING_MISSED`) with miss-type logic.
-- Apply parry haste behavior through shared miss handler.
-- Support spell-driven swing resets via class spell whitelist.
-- On weapon speed changes, scale remaining timer proportionally.
+Expected user-facing behavior:
 
-### Visual behavior
+- Shows cast progress for Aimed Shot and Multi-Shot.
+- Supports interruption, failure, and pushback behavior.
+- Optional latency overlay can be shown.
+- Optional cast text/time text can be shown.
 
-- Show/hide module by `enabled`.
-- Respect `fill_empty` mode.
-- Show or hide off-hand section based on off-hand presence + setting.
-- Show sparks only when appropriate (classic bars and non-terminal width).
-- Alpha is combat-sensitive (`in_combat_alpha`, `ooc_alpha`).
+## 7) Configuration and Commands
 
-## 5) Target Melee Module
+The addon settings window opens with:
 
-### Functional behavior
-
-- Active only when `UnitExists("target")`.
-- On target change, update target GUID/class and reset timers.
-- Reset timers from target combat events equivalent to player logic.
-- Apply parry haste and spell reset behavior via core handlers.
-- Recompute/scale timers when target attack speed changes.
-
-### Visual behavior
-
-- Hide bar when no valid target.
-- Apply independent style/position settings from player bar.
-
-## 6) Hunter/Wand Shot Module
-
-### Functional behavior
-
-- Track ranged cycle using `range_speed`, `auto_cast_time`, `shot_timer`.
-- Support both hunter `Auto Shot` and wand `Shoot` behavior.
-- Detect auto-repeat start/stop state.
-- Handle movement/casting states that delay or re-prime shot cycle.
-- Handle relevant spell events (`Auto Shot`, `Aimed Shot`, `Multi-Shot`, `Shoot`, `Feign Death`, etc.).
-- Keep shot timing consistent under haste changes.
-
-### Optional overlays/features
-
-- Multi-Shot clip zone indicator.
-- Auto-shot delay timer behavior (`FAILED_QUIET` use case).
-- One-bar (YaHT-like) and two-phase display modes.
-
-## 7) Castbar Module (Aimed/Multi)
-
-### Functional behavior
-
-- Show cast progress for Aimed Shot and Multi-Shot (controlled by settings).
-- Start cast on recognized cast start events.
-- Track cast elapsed and completion window.
-- Handle pushback from incoming damage while casting.
-- Handle success, fail, and interrupt outcomes.
-
-### Visual behavior
-
-- Progress bar fills over cast duration.
-- Optional center text and time text.
-- Optional latency overlay.
-- Fade behavior when not actively casting.
-
-## 8) Configuration and UX
-
-### Slash commands
-
-Addon options must open from:
-
-- `/weaponswingtimer`
 - `/wst`
+- `/weaponswingtimer`
 
-### Configuration panels
+Configuration includes:
 
-- Global panel
-  - Lock all bars
-  - Welcome message
-  - Reset defaults
-- Melee panel
-  - Player settings
-  - Target settings
-- Hunter & Wand panel
-  - Shot bar settings
-  - Castbar settings
+- Global options (lock all bars, welcome message, reset defaults)
+- Player melee options
+- Target melee options
+- Hunter/wand shot options
+- Hunter cast bar options
 
-### Persistence
+## 8) Persistence
 
-Saved variables are per-character and must preserve existing names to avoid user setting loss:
+User settings persist between sessions and after `/reload`.
 
-- `character_core_settings`
-- `character_player_settings`
-- `character_target_settings`
-- `character_hunter_autoshot_settings`
-- `character_hunter_shot_castbar_settings`
+Expected result for the player:
 
-## 9) Localization Rules
+- Bar positions remain where they were placed.
+- Enabled/disabled states remain unchanged.
+- Visual style and behavior options remain unchanged.
 
-- All user-facing strings must come from `localization.lua` (`L[...]`).
-- Module files should not hardcode user-facing text.
+## 9) Stability Requirements
 
-## 10) Compatibility and Safety Requirements (2.4.3)
+From user perspective, addon quality means:
 
-### Combat log compatibility
+- No visible errors during login, reload, combat, and target switching.
+- Bars do not freeze in impossible states.
+- Bars hide/show predictably according to settings and combat context.
 
-- Use legacy (2.4.3-style) combat-log payload shape only.
-- Do not depend on `CombatLogGetCurrentEventInfo`.
-
-### Nil and unknown-data safety
-
-- No Lua errors if API returns nil/0 unexpectedly.
-- Unknown ranged weapon IDs must not cause indexing errors in `ranged_DB` lookups.
-- Missing unit/item info must degrade gracefully (safe defaults).
-
-### Stability constraints
-
-- No Lua errors during login/reload/combat transitions.
-- Bars should never get stuck in impossible visual states.
-
-## 11) Definition of Done (Manual Verification)
+## 10) Manual Acceptance Checklist
 
 After install/update and `/reload`, verify:
 
 1. Player melee bar tracks and resets correctly.
 2. Target melee bar appears/disappears with target and tracks correctly.
-3. Hunter/wand bar tracks full ranged cycle and responds to movement/casts.
-4. Multi-Shot clip bar behavior is coherent with shot timing.
-5. Castbar shows Aimed/Multi casts, pushback, and latency (if enabled).
-6. Config panel opens via slash command and settings persist across reload.
-7. Lock-all-bars and reset-defaults work for all modules.
+3. Hunter/wand bar tracks ranged cycle and reacts to movement/casting delays.
+4. Multi-Shot clip and delay indicators are visually coherent.
+5. Cast bar handles Aimed/Multi casts, pushback, and interrupts as expected.
+6. Settings open from slash commands and persist after reload.
+7. Lock all bars and reset defaults work across all visible modules.
