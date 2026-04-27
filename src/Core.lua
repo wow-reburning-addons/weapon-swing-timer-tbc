@@ -5,6 +5,55 @@ if not addon_data then
     _G.WeaponSwingTimer_AddonData = addon_data
 end
 
+-- Добавляем совместимость с TBC 2.4.3: функции SetSize/GetSize могут отсутствовать
+local function AddCompatibility()
+    local frameMeta = getmetatable(CreateFrame("Frame")).__index
+    -- Добавляем GetSize и SetSize для фреймов, если их нет (аналогично !Compatibility)
+    if not frameMeta.SetSize then
+        local function GetSize(self)
+            return self:GetWidth(), self:GetHeight()
+        end
+        local function SetSize(self, width, height)
+            width, height = tonumber(width), tonumber(height)
+            -- Упрощённая проверка (оригинал использует assert с format)
+            if type(width) ~= "number" then
+                -- Если width не число, попробуем использовать как есть (оставим на усмотрение SetWidth)
+                self:SetWidth(width)
+                self:SetHeight(type(height) == "number" and height or width)
+            else
+                self:SetWidth(width)
+                self:SetHeight(type(height) == "number" and height or width)
+            end
+        end
+        frameMeta.GetSize = GetSize
+        frameMeta.SetSize = SetSize
+        
+        -- Также добавляем для текстур и font strings
+        local texture = CreateFrame("Frame"):CreateTexture()
+        local textureMeta = getmetatable(texture).__index
+        if not textureMeta.SetSize then
+            textureMeta.GetSize = GetSize
+            textureMeta.SetSize = SetSize
+        end
+        
+        local fontString = CreateFrame("Frame"):CreateFontString()
+        local fontStringMeta = getmetatable(fontString).__index
+        if not fontStringMeta.SetSize then
+            fontStringMeta.GetSize = GetSize
+            fontStringMeta.SetSize = SetSize
+        end
+    end
+    
+    -- Простой обработчик ошибок, если !Compatibility не загружен
+    if seterrorhandler and not geterrorhandler() then
+        local function simpleErrorHandler(err)
+            DEFAULT_CHAT_FRAME:AddMessage("|cFFFF0000WeaponSwingTimer error:|r " .. tostring(err))
+        end
+        seterrorhandler(simpleErrorHandler)
+    end
+end
+AddCompatibility()
+
 _G.WeaponSwingTimer_LocalizationTable = _G.WeaponSwingTimer_LocalizationTable or addon_data.localization_table or {}
 addon_data.localization_table = _G.WeaponSwingTimer_LocalizationTable
 if not getmetatable(addon_data.localization_table) then
